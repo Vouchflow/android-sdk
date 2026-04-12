@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Displayed in Android Settings → Accounts for the Vouchflow stub account. -->
+    <string name="vouchflow_account_label">Vouchflow</string>
+</resources>

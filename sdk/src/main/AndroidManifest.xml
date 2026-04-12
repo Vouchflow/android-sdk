@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Permissions merged into the host app's manifest. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+
+    <application>
+
+        <!--
+            Stub AccountManager authenticator for cross-reinstall device token persistence.
+            Declares account type "com.vouchflow.sdk" so the SDK can store tokens at the OS
+            account level, outside the app data sandbox. Survives app uninstall on most devices.
+
+            NOTE: android:process is intentionally absent — the service runs in the app's main
+            process (same UID), which grants it authenticator privileges for its own account type
+            without requiring AUTHENTICATE_ACCOUNTS permission from the host app.
+        -->
+        <service
+            android:name="com.vouchflow.sdk.internal.VouchflowAuthenticatorService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/vouchflow_authenticator" />
+        </service>
+
+        <!--
+            Auto-initialization ContentProvider. Captures applicationContext before
+            Vouchflow.configure() is called, matching the iOS "no Context arg" API.
+            The ${applicationId} placeholder is substituted with the host app's package name
+            during manifest merge, guaranteeing a unique authority per app.
+        -->
+        <provider
+            android:name="com.vouchflow.sdk.internal.VouchflowInitProvider"
+            android:authorities="${applicationId}.vouchflowinit"
+            android:exported="false"
+            android:initOrder="100" />
+
+    </application>
+
+</manifest>
