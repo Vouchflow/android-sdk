@@ -25,3 +25,13 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+
+# Android SDK packages (installed locally for builds — not part of the repo)
+build-tools/
+cmake/
+cmdline-tools/
+licenses/
+ndk/
+platform-tools/
+platforms/
+.knownPackages
