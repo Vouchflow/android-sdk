@@ -1,7 +1,7 @@
 package com.vouchflow.sdk
 
 import android.content.Context
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import com.vouchflow.sdk.core.EnrollmentManager
 import com.vouchflow.sdk.core.FallbackManager
 import com.vouchflow.sdk.core.VerificationManager
@@ -91,7 +91,7 @@ object Vouchflow {
             )
 
         _instance = buildInstance(ctx, config)
-        VouchflowLogger.debug("[VouchflowSDK] Configured. environment=${config.environment}, customerId=${config.customerId}")
+        VouchflowLogger.debug("[VouchflowSDK] Configured. environment=${config.environment}")
     }
 
     private fun buildInstance(context: Context, config: VouchflowConfig): VouchflowInstance {
@@ -144,9 +144,8 @@ class VouchflowInstance internal constructor(
      * Verifies the current device. Handles enrollment, biometric presentation, and challenge
      * signing transparently. The developer needs only one call for the happy path.
      *
-     * @param activity The currently-visible [ComponentActivity]. [BiometricPrompt] is bound to
-     *   this Activity — do not cache it. [AppCompatActivity] and [FragmentActivity] are also
-     *   accepted (they both extend [ComponentActivity]).
+     * @param activity The currently-visible [FragmentActivity] ([AppCompatActivity] is also
+     *   accepted). [BiometricPrompt] is bound to this Activity — do not cache it.
      * @param context The action being verified (signup, login, sensitive_action).
      * @param minimumConfidence If the device cannot reach this confidence level,
      *   [VouchflowError.MinimumConfidenceUnmet] is thrown instead of initiating fallback.
@@ -154,7 +153,7 @@ class VouchflowInstance internal constructor(
      * @throws VouchflowError
      */
     suspend fun verify(
-        activity: ComponentActivity,
+        activity: FragmentActivity,
         context: VerificationContext,
         minimumConfidence: Confidence? = null
     ): VouchflowResult = verificationManager.verify(activity, context, minimumConfidence)

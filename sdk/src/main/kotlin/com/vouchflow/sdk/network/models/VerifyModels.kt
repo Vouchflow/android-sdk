@@ -5,7 +5,6 @@ import com.google.gson.annotations.SerializedName
 // ── Initiate verification ─────────────────────────────────────────────────────
 
 internal data class VerifyRequest(
-    @SerializedName("customer_id") val customerId: String,
     @SerializedName("device_token") val deviceToken: String,
     @SerializedName("context") val context: String,
     /** Optional. If the device cannot reach this level, the server returns verification_impossible. */

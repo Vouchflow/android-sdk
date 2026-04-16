@@ -141,7 +141,6 @@ internal class EnrollmentManager(
         // Step 4: POST /v1/enroll.
         val enrollRequest = EnrollRequest(
             idempotencyKey = idempotencyKey,
-            customerId = config.customerId,
             platform = "android",
             reason = reason,
             attestation = attestationPayload,
@@ -210,7 +209,6 @@ internal class EnrollmentManager(
 
         val enrollRequest = EnrollRequest(
             idempotencyKey = idempotencyKey,
-            customerId = config.customerId,
             platform = "android",
             reason = reason,
             attestation = attestationPayload,

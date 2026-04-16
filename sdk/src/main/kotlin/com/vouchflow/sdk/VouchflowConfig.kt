@@ -18,7 +18,6 @@ enum class VouchflowEnvironment(val baseUrl: String, val hostname: String) {
  * Vouchflow.configure(
  *     VouchflowConfig(
  *         apiKey = "vsk_live_...",
- *         customerId = "cust_abc123",
  *         environment = VouchflowEnvironment.PRODUCTION
  *     )
  * )
@@ -26,8 +25,6 @@ enum class VouchflowEnvironment(val baseUrl: String, val hostname: String) {
  *
  * @param apiKey Write-scoped API key. Safe to store in your build config; never use the
  *   read-scoped key here.
- * @param customerId Your Vouchflow customer ID (e.g. `cust_abc123`). Included in enroll and
- *   verify requests so the server can scope device tokens to your account.
  * @param environment Defaults to [VouchflowEnvironment.PRODUCTION]. Use
  *   [VouchflowEnvironment.SANDBOX] during development — verifications do not count toward
  *   billing and do not enter the network graph.
@@ -40,7 +37,6 @@ enum class VouchflowEnvironment(val baseUrl: String, val hostname: String) {
  */
 data class VouchflowConfig(
     val apiKey: String,
-    val customerId: String,
     val environment: VouchflowEnvironment = VouchflowEnvironment.PRODUCTION,
     val leafCertificatePin: String = "iFvwVyJSxnQdyaUvUERIf+8qk7gRze3612JMwoO3zdU=",
     val intermediateCertificatePin: String = "C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M="

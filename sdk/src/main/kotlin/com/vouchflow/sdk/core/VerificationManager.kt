@@ -1,10 +1,10 @@
 package com.vouchflow.sdk.core
 
 import android.os.Build
-import androidx.activity.ComponentActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.vouchflow.sdk.*
 import com.vouchflow.sdk.crypto.ChallengeProcessor
 import com.vouchflow.sdk.crypto.KeystoreKeyManager
@@ -61,7 +61,7 @@ internal class VerificationManager(
     // ── Verify ────────────────────────────────────────────────────────────────
 
     suspend fun verify(
-        activity: ComponentActivity,
+        activity: FragmentActivity,
         context: VerificationContext,
         minimumConfidence: Confidence?
     ): VouchflowResult {
@@ -80,7 +80,6 @@ internal class VerificationManager(
 
         // Step 3: Initiate session.
         val verifyRequest = VerifyRequest(
-            customerId = config.customerId,
             deviceToken = deviceToken,
             context = context.apiValue,
             minimumConfidence = minimumConfidence?.apiValue
@@ -149,7 +148,7 @@ internal class VerificationManager(
      * @return Pair of (base64-encoded DER signature, biometricUsed flag).
      */
     private suspend fun signChallengeWithBiometric(
-        activity: ComponentActivity,
+        activity: FragmentActivity,
         challengeBase64: String,
         sessionId: String
     ): Pair<String, Boolean> {
@@ -190,7 +189,7 @@ internal class VerificationManager(
      * - anything else             → [VouchflowError.BiometricFailed]
      */
     private suspend fun authenticateBiometric(
-        activity: ComponentActivity,
+        activity: FragmentActivity,
         cryptoObject: BiometricPrompt.CryptoObject,
         sessionId: String
     ): BiometricAuthResult = withContext(Dispatchers.Main) {
@@ -291,3 +290,7 @@ internal class VerificationManager(
 
 /** Internal signal from [BiometricPrompt] ERROR_CANCELED (system-level, app backgrounded). */
 private class BiometricSystemCancelledInternal : Exception()
+
+/** Parse an ISO-8601 string to [java.time.Instant], falling back to 60s from now on failure. */
+private fun parseInstant(iso: String): java.time.Instant =
+    runCatching { java.time.Instant.parse(iso) }.getOrDefault(java.time.Instant.now().plusSeconds(60))

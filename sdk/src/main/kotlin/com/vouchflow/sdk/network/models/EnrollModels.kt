@@ -6,7 +6,6 @@ import com.google.gson.annotations.SerializedName
 
 internal data class EnrollRequest(
     @SerializedName("idempotency_key") val idempotencyKey: String,
-    @SerializedName("customer_id") val customerId: String,
     @SerializedName("platform") val platform: String,
     /** fresh_enrollment | reinstall | key_invalidated | corrupted */
     @SerializedName("reason") val reason: String,
