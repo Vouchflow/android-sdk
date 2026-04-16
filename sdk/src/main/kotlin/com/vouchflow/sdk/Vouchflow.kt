@@ -94,6 +94,27 @@ object Vouchflow {
         VouchflowLogger.debug("[VouchflowSDK] Configured. environment=${config.environment}")
     }
 
+    /**
+     * Wipes all local enrollment data: deletes the Keystore keypair and clears the device token
+     * and pending enrollment placeholder from AccountManager.
+     *
+     * After calling this the SDK is in [EnrollmentState.FreshEnrollment] — the next [verify] call
+     * will re-enroll from scratch. Server-side reputation history is NOT affected.
+     *
+     * Primarily intended for testing and support scenarios.
+     */
+    @JvmStatic
+    @Synchronized
+    fun reset() {
+        val ctx = applicationContext ?: return
+        KeystoreKeyManager(ctx).deleteKey()
+        val store = AccountManagerStore(ctx)
+        store.deleteDeviceToken()
+        store.deletePendingToken()
+        _instance = null
+        VouchflowLogger.debug("[VouchflowSDK] Reset complete — local enrollment data cleared.")
+    }
+
     private fun buildInstance(context: Context, config: VouchflowConfig): VouchflowInstance {
         val store = AccountManagerStore(context)
         val keystoreKeyManager = KeystoreKeyManager(context)

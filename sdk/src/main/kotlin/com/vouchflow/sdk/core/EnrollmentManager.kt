@@ -151,6 +151,11 @@ internal class EnrollmentManager(
 
         val response = try {
             apiClient.enroll(enrollRequest)
+        } catch (e: VouchflowError) {
+            // SDK errors (ServerError, NetworkUnavailable, etc.) propagate directly so the
+            // bridge can surface the real message — don't hide them inside EnrollmentFailed.
+            VouchflowLogger.warn("[VouchflowSDK] Enrollment failed: ${e::class.simpleName}")
+            throw e
         } catch (e: Exception) {
             // Step 5b: Leave placeholder — retried on next ensureEnrolled() call.
             VouchflowLogger.warn("[VouchflowSDK] Enrollment network call failed. Will retry on next launch. Error: ${e.message}")
@@ -219,6 +224,9 @@ internal class EnrollmentManager(
 
         val response = try {
             apiClient.enroll(enrollRequest)
+        } catch (e: VouchflowError) {
+            VouchflowLogger.warn("[VouchflowSDK] Enrollment retry failed: ${e::class.simpleName}")
+            throw e
         } catch (e: Exception) {
             throw VouchflowError.EnrollmentFailed(e)
         }

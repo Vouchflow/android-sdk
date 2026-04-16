@@ -44,6 +44,10 @@ internal class AccountManagerStore(context: Context) {
         accountManager.setUserData(account, KEY_DEVICE_TOKEN, token)
     }
 
+    fun deleteDeviceToken() {
+        accountManager.setUserData(account, KEY_DEVICE_TOKEN, null)
+    }
+
     fun deviceTokenExists(): Boolean = readDeviceToken() != null
 
     // ── Pending enrollment placeholder ────────────────────────────────────────
