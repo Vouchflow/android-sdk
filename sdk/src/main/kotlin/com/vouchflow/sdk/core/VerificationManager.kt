@@ -66,6 +66,26 @@ internal class VerificationManager(
      */
     @Volatile internal var pendingFallbackSessionId: String? = null
 
+    // ── Session initiation (test harness utility) ─────────────────────────────
+
+    /**
+     * Initiates a verify session on the server without biometric authentication.
+     * Sets [pendingFallbackSessionId] so [Vouchflow.requestFallback] will work after this call.
+     * For use in developer test harnesses only — not for production app code.
+     */
+    internal suspend fun initiateSession(): String {
+        val deviceToken = withContext(Dispatchers.IO) { store.readDeviceToken() }
+            ?: throw VouchflowError.EnrollmentFailed()
+        val verifyRequest = VerifyRequest(
+            deviceToken = deviceToken,
+            context = VerificationContext.LOGIN.apiValue,
+            minimumConfidence = null
+        )
+        val sessionResponse = withContext(Dispatchers.IO) { apiClient.initiateVerification(verifyRequest) }
+        pendingFallbackSessionId = sessionResponse.sessionId
+        return sessionResponse.sessionId
+    }
+
     // ── Verify ────────────────────────────────────────────────────────────────
 
     suspend fun verify(

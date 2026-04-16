@@ -36,7 +36,6 @@ import com.vouchflow.sdk.storage.SessionCache
  *     // Show retry button
  * } catch (e: VouchflowError.BiometricFailed) {
  *     val fallback = Vouchflow.shared.requestFallback(
- *         sessionId = e.sessionId,
  *         email = userEmail,
  *         reason = FallbackReason.BIOMETRIC_FAILED
  *     )
@@ -214,4 +213,22 @@ class VouchflowInstance internal constructor(
         sessionId: String,
         otp: String
     ): FallbackVerificationResult = fallbackManager.submitOtp(sessionId, otp)
+
+    // ── Reset ─────────────────────────────────────────────────────────────────
+
+    // (See companion object for Vouchflow.reset() static method)
+
+    // ── Test harness utilities ────────────────────────────────────────────────
+
+    /**
+     * For developer test harnesses: initiates a verify session on the server without biometric
+     * authentication. The session is stored as the pending fallback session, so a subsequent
+     * [requestFallback] call will work without requiring a cancelled biometric prompt.
+     *
+     * Do not use this in production app code.
+     *
+     * @return The server-assigned session ID (for logging).
+     */
+    suspend fun initiateSessionForFallbackTesting(): String =
+        verificationManager.initiateSession()
 }
