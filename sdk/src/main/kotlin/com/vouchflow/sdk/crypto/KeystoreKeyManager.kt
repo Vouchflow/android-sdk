@@ -97,27 +97,15 @@ internal class KeystoreKeyManager(private val context: Context) {
     }
 
     /**
-     * Encodes the public key as an uncompressed EC point (x963 / 04 || x || y format),
-     * base64-encoded without padding. Matches the iOS SDK's `x963Representation`.
+     * Encodes the public key as a SubjectPublicKeyInfo DER structure, base64-encoded without
+     * padding. This is the standard Java `PublicKey.encoded` (X.509) format and is directly
+     * importable by Node.js's `crypto.createPublicKey({ format: 'der', type: 'spki' })`.
+     *
+     * Previously this returned a raw uncompressed EC point (04 || x || y), which cannot be parsed
+     * as a PEM or DER key by the server's Node.js crypto module.
      */
     private fun encodePublicKey(publicKey: PublicKey): String {
-        val ecKey = publicKey as ECPublicKey
-        val x = ecKey.w.affineX.toByteArray()
-        val y = ecKey.w.affineY.toByteArray()
-
-        val uncompressed = ByteArray(65)
-        uncompressed[0] = 0x04
-        copyCoordinate(x, uncompressed, destOffset = 1)
-        copyCoordinate(y, uncompressed, destOffset = 33)
-
-        return android.util.Base64.encodeToString(uncompressed, android.util.Base64.NO_WRAP)
-    }
-
-    /** Copies a BigInteger byte array (may have leading 0x00 sign byte) into a fixed 32-byte slot. */
-    private fun copyCoordinate(coord: ByteArray, dest: ByteArray, destOffset: Int) {
-        val stripped = coord.dropWhile { it == 0.toByte() }.toByteArray()
-        val start = destOffset + (32 - stripped.size.coerceAtMost(32))
-        stripped.copyInto(dest, destinationOffset = start, startIndex = (stripped.size - 32).coerceAtLeast(0))
+        return android.util.Base64.encodeToString(publicKey.encoded, android.util.Base64.NO_WRAP)
     }
 
     // ── Key existence and validity ────────────────────────────────────────────

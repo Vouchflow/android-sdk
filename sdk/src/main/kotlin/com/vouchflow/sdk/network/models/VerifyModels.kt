@@ -29,7 +29,7 @@ internal data class CompleteVerificationRequest(
 
 internal data class CompleteVerificationResponse(
     @SerializedName("verified") val verified: Boolean,
-    @SerializedName("confidence") val confidence: String,
+    @SerializedName("confidence") val confidence: String?,
     @SerializedName("session_state") val sessionState: String,
     @SerializedName("device_token") val deviceToken: String,
     @SerializedName("device_age_days") val deviceAgeDays: Int,

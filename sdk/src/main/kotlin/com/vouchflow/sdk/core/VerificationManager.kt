@@ -279,7 +279,7 @@ internal class VerificationManager(
     ): VouchflowResult {
         return VouchflowResult(
             verified = response.verified,
-            confidence = Confidence.fromApi(response.confidence),
+            confidence = response.confidence?.let { Confidence.fromApi(it) } ?: Confidence.LOW,
             deviceToken = deviceToken,
             deviceAgeDays = response.deviceAgeDays,
             networkVerifications = response.networkVerifications,
