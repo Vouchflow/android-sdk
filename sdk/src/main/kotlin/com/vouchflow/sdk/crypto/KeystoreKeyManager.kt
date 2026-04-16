@@ -19,8 +19,9 @@ import java.security.spec.ECGenParameterSpec
  * ## Key properties
  * - Algorithm: EC secp256r1 (P-256), SHA-256 digest
  * - Authentication: required on every use (`timeout = 0`)
- * - `setInvalidatedByBiometricEnrollment(true)`: adding new biometrics invalidates the key,
- *   triggering KEY_INVALIDATED re-enrollment with reputation history preserved
+ * - On API 30+: allows `AUTH_BIOMETRIC_STRONG or AUTH_DEVICE_CREDENTIAL` so the key can be
+ *   unlocked by fingerprint, face, or device PIN/pattern/password.
+ * - On API < 30: biometric-only (device credential not supported via per-use keys on older APIs).
  * - StrongBox if hardware is present; TEE otherwise. Both are recorded for confidence scoring.
  *
  * ## Key validity check
@@ -70,11 +71,17 @@ internal class KeystoreKeyManager(private val context: Context) {
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
             .setUserAuthenticationRequired(true)
-            .setInvalidatedByBiometricEnrollment(true)
+            // setInvalidatedByBiometricEnrollment is incompatible with AUTH_DEVICE_CREDENTIAL
+            // (throws IllegalArgumentException on API 30+). Omit it — key remains valid when the
+            // user adds new biometrics, which is acceptable when device credential is allowed.
             .apply {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+                    setUserAuthenticationParameters(
+                        0, // timeout = 0: authentication required on every key use
+                        KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
+                    )
                 } else {
+                    // API < 30: AUTH_DEVICE_CREDENTIAL per-use is not supported; biometric-only.
                     @Suppress("DEPRECATION")
                     setUserAuthenticationValidityDurationSeconds(-1)
                 }

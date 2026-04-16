@@ -124,7 +124,7 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
                     throw VouchflowError.ServerError(
                         statusCode = 410,
                         code = detail?.code,
-                        message = detail?.message
+                        serverMessage = detail?.message
                     )
                 }
 
@@ -142,7 +142,7 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
                     throw VouchflowError.ServerError(
                         statusCode = resp.code,
                         code = detail?.code,
-                        message = detail?.message
+                        serverMessage = detail?.message
                     )
                 }
             }

@@ -183,8 +183,8 @@ internal class VerificationManager(
      *
      * Error code mapping:
      * - `ERROR_CANCELED`          → [BiometricSystemCancelledInternal] (app backgrounded — retry)
-     * - `ERROR_USER_CANCELED`     → [VouchflowError.BiometricCancelled] (user pressed cancel)
-     * - `ERROR_NEGATIVE_BUTTON`   → [VouchflowError.BiometricCancelled] (user pressed "Use another method")
+     * - `ERROR_USER_CANCELED`     → [VouchflowError.BiometricCancelled] (user dismissed prompt)
+     * - `ERROR_NEGATIVE_BUTTON`   → [VouchflowError.BiometricCancelled] (API < 30: "Use another method")
      * - `ERROR_HW_UNAVAILABLE` et al. → [VouchflowError.BiometricUnavailable]
      * - anything else             → [VouchflowError.BiometricFailed]
      */
@@ -239,12 +239,28 @@ internal class VerificationManager(
                 }
             )
 
-            val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Verify your identity")
-                .setDescription("Use your biometric credential to verify")
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                .setNegativeButtonText("Use another method")
-                .build()
+            // On API 30+: allow biometric OR device credential (PIN/pattern/password).
+            // setNegativeButtonText is incompatible with DEVICE_CREDENTIAL — omit it on API 30+;
+            // the system provides its own dismiss action.
+            // On API < 30: device credential is not supported for per-use CryptoObject keys;
+            // keep biometric-only with an explicit negative button.
+            val promptInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Verify your identity")
+                    .setDescription("Use your biometric or device PIN to verify")
+                    .setAllowedAuthenticators(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                    )
+                    .build()
+            } else {
+                BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Verify your identity")
+                    .setDescription("Use your biometric credential to verify")
+                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                    .setNegativeButtonText("Cancel")
+                    .build()
+            }
 
             prompt.authenticate(promptInfo, cryptoObject)
 

@@ -35,3 +35,9 @@ ndk/
 platform-tools/
 platforms/
 .knownPackages
+
+# Build outputs and Gradle caches
+.gradle/
+build/
+local.properties
+*/build/

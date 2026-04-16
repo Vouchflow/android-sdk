@@ -22,7 +22,7 @@ sealed class VouchflowError : Exception() {
      * Device enrollment failed. The SDK will retry automatically on the next call.
      * Verification can still proceed in degraded mode, or the developer can hard-fail.
      */
-    data class EnrollmentFailed(val cause: Throwable? = null) : VouchflowError()
+    data class EnrollmentFailed(val enrollmentCause: Throwable? = null) : VouchflowError()
 
     /**
      * Play Integrity attestation is not available on this device (no Google Play Services,
@@ -84,7 +84,7 @@ sealed class VouchflowError : Exception() {
     data class ServerError(
         val statusCode: Int,
         val code: String?,
-        val message: String?
+        val serverMessage: String?
     ) : VouchflowError()
 
     /**
