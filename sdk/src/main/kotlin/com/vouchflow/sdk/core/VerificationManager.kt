@@ -58,6 +58,14 @@ internal class VerificationManager(
     private val apiClient: VouchflowAPIClient
 ) {
 
+    /**
+     * The session ID from the most recently initiated (but not yet completed) verification.
+     * Set when a session is created, updated if the session is retried, cleared on success.
+     * Retained through biometric failures so [Vouchflow.requestFallback] can use it without
+     * the developer having to extract and pass it from the thrown error.
+     */
+    @Volatile internal var pendingFallbackSessionId: String? = null
+
     // ── Verify ────────────────────────────────────────────────────────────────
 
     suspend fun verify(
@@ -85,6 +93,7 @@ internal class VerificationManager(
             minimumConfidence = minimumConfidence?.apiValue
         )
         var sessionResponse = withContext(Dispatchers.IO) { apiClient.initiateVerification(verifyRequest) }
+        pendingFallbackSessionId = sessionResponse.sessionId
 
         sessionCache.store(SessionCache.CachedSession(
             sessionId = sessionResponse.sessionId,
@@ -115,6 +124,7 @@ internal class VerificationManager(
                     apiClient.completeVerification(sessionResponse.sessionId, completeRequest)
                 }
                 sessionCache.clear()
+                pendingFallbackSessionId = null // session fully resolved — no fallback possible
                 return mapResult(response, deviceToken, context)
             } catch (e: VouchflowError.SessionExpiredInternal) {
                 expiryCount++
@@ -125,6 +135,7 @@ internal class VerificationManager(
                     expiresAt = Instant.now().plusSeconds(60).toString(),
                     sessionState = "INITIATED"
                 )
+                pendingFallbackSessionId = e.retrySessionId // follow the retry chain
                 sessionCache.store(SessionCache.CachedSession(
                     sessionId = e.retrySessionId,
                     challenge = e.retryChallenge,

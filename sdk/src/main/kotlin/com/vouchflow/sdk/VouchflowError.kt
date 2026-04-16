@@ -67,6 +67,13 @@ sealed class VouchflowError : Exception() {
      */
     object SessionExpiredRepeatedly : VouchflowError()
 
+    /**
+     * [Vouchflow.requestFallback] was called but there is no active session to fall back from.
+     * Call [Vouchflow.verify] first; only call [Vouchflow.requestFallback] after catching
+     * [BiometricCancelled] or [BiometricFailed].
+     */
+    object NoActiveSession : VouchflowError()
+
     // ── Confidence ────────────────────────────────────────────────────────────
 
     /**

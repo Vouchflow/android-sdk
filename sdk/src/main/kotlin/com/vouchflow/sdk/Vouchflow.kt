@@ -182,21 +182,26 @@ class VouchflowInstance internal constructor(
     // ── Fallback ──────────────────────────────────────────────────────────────
 
     /**
-     * Initiates email OTP fallback for a verification session.
+     * Initiates email OTP fallback for the most recently initiated verification session.
      *
      * Call this after catching [VouchflowError.BiometricFailed] or [VouchflowError.BiometricCancelled].
+     * The session ID is managed internally — you do not need to pass it.
      * The SDK SHA-256 hashes the email internally — do not pre-hash it.
      *
-     * @param sessionId The `sessionId` from the thrown [VouchflowError] associated value.
      * @param email The user's plain-text email address. Never stored or logged by the SDK.
      * @param reason Why fallback is being requested.
      * @return A [FallbackResult] containing the [FallbackResult.fallbackSessionId] and OTP expiry.
+     * @throws VouchflowError.NoActiveSession if [verify] has not been called yet or the session
+     *   already completed successfully.
      */
     suspend fun requestFallback(
-        sessionId: String,
         email: String,
         reason: FallbackReason = FallbackReason.BIOMETRIC_FAILED
-    ): FallbackResult = fallbackManager.requestFallback(sessionId, email, reason)
+    ): FallbackResult {
+        val sessionId = verificationManager.pendingFallbackSessionId
+            ?: throw VouchflowError.NoActiveSession
+        return fallbackManager.requestFallback(sessionId, email, reason)
+    }
 
     /**
      * Submits the OTP entered by the user to complete a fallback verification.
