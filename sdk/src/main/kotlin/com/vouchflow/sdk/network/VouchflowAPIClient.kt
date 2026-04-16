@@ -83,10 +83,14 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
         val response = try {
             client.newCall(request).execute()
         } catch (e: IOException) {
-            // OkHttp throws IOException when the CertificatePinner rejects, or on network failure.
-            // Distinguish pinning failures (our blocking interceptor message) from genuine network errors.
-            if (e.message?.contains("Certificate pinning failed") == true ||
-                e.message?.contains("placeholder pins") == true) {
+            // OkHttp throws IOException on network failure and SSLPeerUnverifiedException
+            // (a subtype of IOException) when CertificatePinner rejects the chain.
+            // OkHttp's actual pinning failure message is "Certificate pinning failure!" (with
+            // exclamation mark, not "failed") — check for both forms plus our own interceptor msg.
+            val msg = e.message ?: ""
+            if (msg.contains("Certificate pinning failure") ||
+                msg.contains("Certificate pinning failed") ||
+                msg.contains("placeholder pins")) {
                 throw VouchflowError.PinningFailure
             }
             throw VouchflowError.NetworkUnavailable

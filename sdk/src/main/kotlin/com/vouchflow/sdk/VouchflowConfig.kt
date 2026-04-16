@@ -28,18 +28,21 @@ enum class VouchflowEnvironment(val baseUrl: String, val hostname: String) {
  * @param environment Defaults to [VouchflowEnvironment.PRODUCTION]. Use
  *   [VouchflowEnvironment.SANDBOX] during development — verifications do not count toward
  *   billing and do not enter the network graph.
- * @param leafCertificatePin SHA-256 hash of the Let's Encrypt intermediate CA's
- *   SubjectPublicKeyInfo serving api.vouchflow.dev. Pinned at intermediate (not leaf) level
- *   to survive Fly.io's 60-day Let's Encrypt leaf rotations without requiring an SDK release.
- *   Placeholder values disable pinning in debug builds and block all connections in release builds.
- * @param intermediateCertificatePin SHA-256 hash of ISRG Root X1 (Let's Encrypt root CA).
- *   Essentially permanent — serves as a safety net if the intermediate CA is ever rotated.
+ * @param leafCertificatePin SPKI SHA-256 of the Let's Encrypt E7 intermediate CA serving
+ *   api.vouchflow.dev. Pinned at intermediate (not leaf) level so the SDK survives Fly.io's
+ *   60-day Let's Encrypt leaf rotations without requiring an SDK update. Placeholder values
+ *   (starting with "TODO") disable pinning in debug builds and block all requests in release builds.
+ * @param intermediateCertificatePin Backup SPKI SHA-256 pin. Currently set to the same E7
+ *   intermediate as [leafCertificatePin]. Update both when Let's Encrypt rotates to a new
+ *   intermediate CA. ISRG Root X1 is NOT used because Fly.io's TLS handshake does not include
+ *   the root certificate, so it cannot be matched by OkHttp's CertificatePinner.
  */
 data class VouchflowConfig(
     val apiKey: String,
     val environment: VouchflowEnvironment = VouchflowEnvironment.PRODUCTION,
-    val leafCertificatePin: String = "iFvwVyJSxnQdyaUvUERIf+8qk7gRze3612JMwoO3zdU=",
-    val intermediateCertificatePin: String = "C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M="
+    // E7 intermediate CA SubjectPublicKeyInfo SHA-256. Valid while Let's Encrypt issues from E7.
+    val leafCertificatePin: String = "y7xVm0TVJNahMr2sZydE2jQH8SquXV9yLF9seROHHHU=",
+    val intermediateCertificatePin: String = "y7xVm0TVJNahMr2sZydE2jQH8SquXV9yLF9seROHHHU="
 ) {
     internal val hasTodoPlaceholderPins: Boolean
         get() = leafCertificatePin.startsWith("TODO") || intermediateCertificatePin.startsWith("TODO")
