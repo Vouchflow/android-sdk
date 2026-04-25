@@ -63,8 +63,10 @@ data class VouchflowResult(
     /** Confidence level of this verification. */
     val confidence: Confidence,
     /**
-     * The device token for this device. Use this for server-side reputation API calls
-     * (`GET /v1/device/{device_token}/reputation`). Never log or store it unnecessarily.
+     * The device token for this device. Pass to your server — it can call
+     * `GET /v1/device/{device_token}/reputation` (read-scoped key) to independently confirm
+     * that this device just verified and at what confidence level.
+     * Never log or store it unnecessarily.
      */
     val deviceToken: String,
     /** Number of days since this device token was first enrolled. */

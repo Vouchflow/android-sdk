@@ -43,8 +43,7 @@ class MyApplication : Application() {
         super.onCreate()
         Vouchflow.configure(
             VouchflowConfig(
-                apiKey = "vsk_live_...",
-                customerId = "cust_..."
+                apiKey = "vsk_live_..."
             )
         )
     }
@@ -53,7 +52,7 @@ class MyApplication : Application() {
 
 No `Context` argument is needed — the SDK captures it automatically via a `ContentProvider` that initialises before `Application.onCreate()`. The `configure()` call itself is context-free.
 
-`apiKey` is your write-scoped API key from the Vouchflow dashboard. `customerId` is your Vouchflow customer ID. Both are safe to store in your `BuildConfig` — do not use a read-scoped key here.
+`apiKey` is your write-scoped API key from the Vouchflow dashboard. It is safe to store in your `BuildConfig` — do not use a read-scoped key here. No `customerId` is required; your customer account is identified server-side from the API key.
 
 ## Verification
 
@@ -102,6 +101,32 @@ val result = Vouchflow.shared.verify(
     minimumConfidence = Confidence.HIGH
 )
 ```
+
+## Server-side verification
+
+After `verify()` succeeds, pass `result.deviceToken` to your server. Your server then calls `GET /v1/device/{token}/reputation` using a **read-scoped key** (`vsk_live_read_...`) to independently confirm:
+
+- `last_verification.completed_at` is within your freshness window (e.g. last 30 seconds)
+- `last_verification.confidence` meets your threshold
+- `last_verification.context` matches the action being performed
+- `risk_score` is acceptable (0–100; higher means more anomalous)
+
+```
+Mobile                       Your server                    Vouchflow
+  │  verify() succeeds           │                              │
+  │  ──── {deviceToken} ────►    │                              │
+  │                              │  GET /v1/device/:token/      │
+  │                              │  reputation ──────────────►  │
+  │                              │  ◄────── {last_verification, │
+  │                              │           risk_score, ...} ──│
+  │                              │                              │
+  │                     check last_verification.completed_at    │
+  │                     is within your freshness window (e.g.   │
+  │                     30s), confidence meets your threshold,  │
+  │                     and risk_score is acceptable            │
+```
+
+Never call `GET /v1/device/:token/reputation` from mobile — it requires a read-scoped key that must stay server-side.
 
 ## Error handling
 
@@ -205,7 +230,7 @@ Returned by `verify()`.
 |---|---|---|
 | `verified` | `Boolean` | Whether verification succeeded |
 | `confidence` | `Confidence` | `HIGH`, `MEDIUM`, or `LOW` |
-| `deviceToken` | `String` | Stable device identifier — pass to your server for reputation queries |
+| `deviceToken` | `String` | Stable device identifier — pass to your server, which calls `GET /v1/device/{token}/reputation` (read-scoped key) to independently confirm the verification |
 | `deviceAgeDays` | `Int` | Days since this device was first enrolled |
 | `networkVerifications` | `Int` | Total verifications for this device across the Vouchflow network |
 | `firstSeen` | `Instant?` | When this device was first enrolled |
@@ -239,19 +264,22 @@ Returned by `submitFallbackOtp()`.
 ```kotlin
 VouchflowConfig(
     apiKey = "vsk_live_...",           // Required. Write-scoped key from the dashboard.
-    customerId = "cust_...",           // Required. Your Vouchflow customer ID.
     environment = VouchflowEnvironment.PRODUCTION,  // Optional. Default: PRODUCTION
     leafCertificatePin = "...",        // Optional. SHA-256 of the Vouchflow intermediate CA SPKI.
     intermediateCertificatePin = "..."  // Optional. SHA-256 of the ISRG Root X1 SPKI.
 )
 ```
 
+No `customerId` is needed in the SDK — your customer account is identified server-side from the API key.
+
 ### Environments
 
-| Environment | Description |
-|---|---|
-| `PRODUCTION` | Live environment. Verifications count toward billing and enter the network graph. |
-| `SANDBOX` | Development environment. Verifications are free and isolated from the network graph. |
+| Environment | Base URL | Key prefix |
+|---|---|---|
+| `PRODUCTION` | `https://api.vouchflow.dev/v1` | `vsk_live_` |
+| `SANDBOX` | `https://sandbox.api.vouchflow.dev/v1` | `vsk_sandbox_` |
+
+Sandbox verifications are free, isolated from the network graph, and do not affect billing. The SDK selects the correct host automatically based on the `environment` setting.
 
 ### Certificate pinning
 
