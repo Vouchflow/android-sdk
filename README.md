@@ -311,13 +311,9 @@ The SDK pins the Vouchflow TLS certificate by default using the Let's Encrypt in
 
 ## Releases
 
-Releases are published automatically to [Maven Central](https://central.sonatype.com/artifact/dev.vouchflow/android-sdk) when a `v*` tag is pushed.
+The patch version increments automatically on every push to `main`. CI reads `VERSION_NAME` from `gradle.properties`, bumps the patch digit, commits the change back to `main` with `[skip ci]`, and pushes a `v*` tag. The tag push triggers a separate publish job that runs tests, publishes to [Maven Central](https://central.sonatype.com/artifact/dev.vouchflow/android-sdk), and creates a GitHub release with auto-generated notes.
 
-```bash
-git tag v1.0.1 && git push origin v1.0.1
-```
-
-The CI pipeline runs tests and lint, then publishes and creates a GitHub release with auto-generated notes.
+To cut a minor or major release, update `VERSION_NAME` in `gradle.properties` manually and push to `main`.
 
 ### Required repository secrets
 
