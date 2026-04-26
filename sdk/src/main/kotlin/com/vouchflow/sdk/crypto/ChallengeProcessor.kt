@@ -1,4 +1,4 @@
-package com.vouchflow.sdk.crypto
+package dev.vouchflow.sdk.crypto
 
 import android.util.Base64
 import java.security.Signature

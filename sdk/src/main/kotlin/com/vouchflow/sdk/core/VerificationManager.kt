@@ -1,20 +1,20 @@
-package com.vouchflow.sdk.core
+package dev.vouchflow.sdk.core
 
 import android.os.Build
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import com.vouchflow.sdk.*
-import com.vouchflow.sdk.crypto.ChallengeProcessor
-import com.vouchflow.sdk.crypto.KeystoreKeyManager
-import com.vouchflow.sdk.internal.VouchflowLogger
-import com.vouchflow.sdk.network.VouchflowAPIClient
-import com.vouchflow.sdk.network.models.CompleteVerificationRequest
-import com.vouchflow.sdk.network.models.VerifyRequest
-import com.vouchflow.sdk.network.models.VerifyResponse
-import com.vouchflow.sdk.storage.AccountManagerStore
-import com.vouchflow.sdk.storage.SessionCache
+import dev.vouchflow.sdk.*
+import dev.vouchflow.sdk.crypto.ChallengeProcessor
+import dev.vouchflow.sdk.crypto.KeystoreKeyManager
+import dev.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.network.VouchflowAPIClient
+import dev.vouchflow.sdk.network.models.CompleteVerificationRequest
+import dev.vouchflow.sdk.network.models.VerifyRequest
+import dev.vouchflow.sdk.network.models.VerifyResponse
+import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.SessionCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -304,7 +304,7 @@ internal class VerificationManager(
     // ── Result mapping ────────────────────────────────────────────────────────
 
     private fun mapResult(
-        response: com.vouchflow.sdk.network.models.CompleteVerificationResponse,
+        response: dev.vouchflow.sdk.network.models.CompleteVerificationResponse,
         deviceToken: String,
         context: VerificationContext
     ): VouchflowResult {

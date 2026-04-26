@@ -1,4 +1,4 @@
-package com.vouchflow.sdk.core
+package dev.vouchflow.sdk.core
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -12,7 +12,7 @@ import kotlin.coroutines.resume
  * Provides app lifecycle signals to the verification flow.
  *
  * When the OS sends the app to the background mid-biometric, [BiometricPrompt] cancels the
- * prompt with `ERROR_CANCELED`. [com.vouchflow.sdk.core.VerificationManager] catches this and
+ * prompt with `ERROR_CANCELED`. [dev.vouchflow.sdk.core.VerificationManager] catches this and
  * calls [waitForForeground] to suspend until the user returns to the app, at which point the
  * biometric prompt is silently re-presented.
  *

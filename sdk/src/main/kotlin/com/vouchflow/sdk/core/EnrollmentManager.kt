@@ -1,14 +1,14 @@
-package com.vouchflow.sdk.core
+package dev.vouchflow.sdk.core
 
 import android.content.Context
-import com.vouchflow.sdk.VouchflowConfig
-import com.vouchflow.sdk.VouchflowError
-import com.vouchflow.sdk.crypto.KeystoreKeyManager
-import com.vouchflow.sdk.crypto.PlayIntegrityProvider
-import com.vouchflow.sdk.internal.VouchflowLogger
-import com.vouchflow.sdk.network.VouchflowAPIClient
-import com.vouchflow.sdk.network.models.EnrollRequest
-import com.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.VouchflowConfig
+import dev.vouchflow.sdk.VouchflowError
+import dev.vouchflow.sdk.crypto.KeystoreKeyManager
+import dev.vouchflow.sdk.crypto.PlayIntegrityProvider
+import dev.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.network.VouchflowAPIClient
+import dev.vouchflow.sdk.network.models.EnrollRequest
+import dev.vouchflow.sdk.storage.AccountManagerStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,7 +18,7 @@ import java.util.UUID
 /**
  * Detects enrollment state and performs enrollment atomically.
  *
- * A [Mutex] serialises concurrent [ensureEnrolled] calls — if two [com.vouchflow.sdk.Vouchflow.verify]
+ * A [Mutex] serialises concurrent [ensureEnrolled] calls — if two [dev.vouchflow.sdk.Vouchflow.verify]
  * calls race on a fresh install, only one enrollment network request is made.
  *
  * ## Enrollment state machine
@@ -60,7 +60,7 @@ internal class EnrollmentManager(
 
     /**
      * Ensures the device is enrolled. No-op if already enrolled. Idempotent — safe to call
-     * before every [com.vouchflow.sdk.Vouchflow.verify]; returns immediately in [EnrollmentState.SkipEnrollment].
+     * before every [dev.vouchflow.sdk.Vouchflow.verify]; returns immediately in [EnrollmentState.SkipEnrollment].
      */
     suspend fun ensureEnrolled() = mutex.withLock {
         withContext(Dispatchers.IO) {
@@ -238,7 +238,7 @@ internal class EnrollmentManager(
     private fun extractPublicKeyFromKeystore(): String? {
         return try {
             val ks = java.security.KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
-            val entry = ks.getEntry("com.vouchflow.sdk.key_v1", null) as? java.security.KeyStore.PrivateKeyEntry
+            val entry = ks.getEntry("dev.vouchflow.sdk.key_v1", null) as? java.security.KeyStore.PrivateKeyEntry
                 ?: return null
             val ecKey = entry.certificate.publicKey as java.security.interfaces.ECPublicKey
             val x = ecKey.w.affineX.toByteArray()

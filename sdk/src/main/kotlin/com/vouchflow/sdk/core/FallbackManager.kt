@@ -1,14 +1,14 @@
-package com.vouchflow.sdk.core
+package dev.vouchflow.sdk.core
 
-import com.vouchflow.sdk.FallbackReason
-import com.vouchflow.sdk.FallbackResult
-import com.vouchflow.sdk.FallbackSignals
-import com.vouchflow.sdk.FallbackVerificationResult
-import com.vouchflow.sdk.VouchflowError
-import com.vouchflow.sdk.network.VouchflowAPIClient
-import com.vouchflow.sdk.network.models.FallbackCompleteRequest
-import com.vouchflow.sdk.network.models.FallbackRequest
-import com.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.FallbackReason
+import dev.vouchflow.sdk.FallbackResult
+import dev.vouchflow.sdk.FallbackSignals
+import dev.vouchflow.sdk.FallbackVerificationResult
+import dev.vouchflow.sdk.VouchflowError
+import dev.vouchflow.sdk.network.VouchflowAPIClient
+import dev.vouchflow.sdk.network.models.FallbackCompleteRequest
+import dev.vouchflow.sdk.network.models.FallbackRequest
+import dev.vouchflow.sdk.storage.AccountManagerStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
@@ -17,8 +17,8 @@ import java.time.Instant
 /**
  * Manages the email OTP fallback path.
  *
- * Called by the developer after catching [com.vouchflow.sdk.VouchflowError.BiometricFailed]
- * or [com.vouchflow.sdk.VouchflowError.BiometricCancelled] from [com.vouchflow.sdk.Vouchflow.verify].
+ * Called by the developer after catching [dev.vouchflow.sdk.VouchflowError.BiometricFailed]
+ * or [dev.vouchflow.sdk.VouchflowError.BiometricCancelled] from [dev.vouchflow.sdk.Vouchflow.verify].
  * The developer decides whether to offer fallback — the SDK never auto-triggers it.
  */
 internal class FallbackManager(
@@ -75,7 +75,7 @@ internal class FallbackManager(
 
             FallbackVerificationResult(
                 verified = response.verified,
-                confidence = com.vouchflow.sdk.Confidence.fromApi(response.confidence),
+                confidence = dev.vouchflow.sdk.Confidence.fromApi(response.confidence),
                 sessionState = response.sessionState,
                 fallbackSignals = FallbackSignals(
                     ipConsistent = response.fallbackSignals.ipConsistent,

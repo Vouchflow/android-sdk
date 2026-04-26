@@ -1,4 +1,4 @@
-package com.vouchflow.sdk.internal
+package dev.vouchflow.sdk.internal
 
 import android.accounts.AbstractAccountAuthenticator
 import android.accounts.Account
@@ -15,7 +15,7 @@ import android.os.IBinder
  *
  * AccountManager stores data at the OS account level, outside the app data sandbox, so it
  * survives app uninstalls on most devices. To use AccountManager for our account type
- * ("com.vouchflow.sdk"), we must declare an authenticator. This stub rejects all standard
+ * ("dev.vouchflow.sdk"), we must declare an authenticator. This stub rejects all standard
  * account operations — the only capability we use is [android.accounts.AccountManager.getUserData]
  * and [android.accounts.AccountManager.setUserData] for key-value storage.
  *

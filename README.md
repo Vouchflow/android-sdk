@@ -1,7 +1,7 @@
 # Vouchflow Android SDK
 
 [![CI](https://github.com/vouchflow/android-sdk/actions/workflows/android.yml/badge.svg)](https://github.com/vouchflow/android-sdk/actions/workflows/android.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/com.vouchflow/android-sdk)](https://central.sonatype.com/artifact/com.vouchflow/android-sdk)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.vouchflow/android-sdk)](https://central.sonatype.com/artifact/dev.vouchflow/android-sdk)
 
 Device-native identity verification for Android apps. Vouchflow uses Android Keystore cryptography and biometrics to verify that a user is operating from a known, trusted device — without passwords or third-party redirects.
 
@@ -19,7 +19,7 @@ Add the dependency to your app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.vouchflow:android-sdk:1.0.0")
+    implementation("dev.vouchflow:android-sdk:1.0.0")
 }
 ```
 
@@ -27,7 +27,7 @@ Or in Groovy `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'com.vouchflow:android-sdk:1.0.0'
+    implementation 'dev.vouchflow:android-sdk:1.0.0'
 }
 ```
 
@@ -38,8 +38,8 @@ The SDK's manifest is merged automatically. No additional permissions need to be
 Call `Vouchflow.configure()` once at app startup, before any other SDK method. The earliest safe point is `Application.onCreate()`.
 
 ```kotlin
-import com.vouchflow.sdk.Vouchflow
-import com.vouchflow.sdk.VouchflowConfig
+import dev.vouchflow.sdk.Vouchflow
+import dev.vouchflow.sdk.VouchflowConfig
 
 class MyApplication : Application() {
     override fun onCreate() {
@@ -311,7 +311,7 @@ The SDK pins the Vouchflow TLS certificate by default using the Let's Encrypt in
 
 ## Releases
 
-Releases are published automatically to [Maven Central](https://central.sonatype.com/artifact/com.vouchflow/android-sdk) when a `v*` tag is pushed.
+Releases are published automatically to [Maven Central](https://central.sonatype.com/artifact/dev.vouchflow/android-sdk) when a `v*` tag is pushed.
 
 ```bash
 git tag v1.0.1 && git push origin v1.0.1
@@ -328,4 +328,4 @@ The CI pipeline runs tests and lint, then publishes and creates a GitHub release
 | `SIGNING_KEY` | Armored GPG private key (`gpg --armor --export-secret-keys KEY_ID`) |
 | `SIGNING_PASSWORD` | GPG key passphrase |
 
-The `com.vouchflow` namespace must be verified at [central.sonatype.com](https://central.sonatype.com) via a DNS TXT record on `vouchflow.com` before the first publish.
+The `dev.vouchflow` namespace must be verified at [central.sonatype.com](https://central.sonatype.com) via a DNS TXT record on `vouchflow.com` before the first publish.

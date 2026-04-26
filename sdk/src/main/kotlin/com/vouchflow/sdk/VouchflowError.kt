@@ -1,4 +1,4 @@
-package com.vouchflow.sdk
+package dev.vouchflow.sdk
 
 /**
  * All errors surfaced to the developer by the Vouchflow SDK.
@@ -103,8 +103,8 @@ sealed class VouchflowError : Exception() {
     // ── Internal (not part of the public API surface) ─────────────────────────
 
     /**
-     * Internal carrier used by [com.vouchflow.sdk.network.VouchflowAPIClient] to pass
-     * retry session data up to [com.vouchflow.sdk.core.VerificationManager].
+     * Internal carrier used by [dev.vouchflow.sdk.network.VouchflowAPIClient] to pass
+     * retry session data up to [dev.vouchflow.sdk.core.VerificationManager].
      * Developers never see this — it is always translated before crossing the public boundary.
      */
     internal data class SessionExpiredInternal(

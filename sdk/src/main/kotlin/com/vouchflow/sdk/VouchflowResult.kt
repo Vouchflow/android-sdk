@@ -1,4 +1,4 @@
-package com.vouchflow.sdk
+package dev.vouchflow.sdk
 
 import java.time.Instant
 

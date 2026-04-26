@@ -1,12 +1,12 @@
-package com.vouchflow.sdk.network
+package dev.vouchflow.sdk.network
 
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.vouchflow.sdk.VouchflowConfig
-import com.vouchflow.sdk.VouchflowError
-import com.vouchflow.sdk.internal.VouchflowLogger
-import com.vouchflow.sdk.network.models.*
+import dev.vouchflow.sdk.VouchflowConfig
+import dev.vouchflow.sdk.VouchflowError
+import dev.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.network.models.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request

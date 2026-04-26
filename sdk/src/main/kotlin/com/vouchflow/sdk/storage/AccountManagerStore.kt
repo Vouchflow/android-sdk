@@ -1,9 +1,9 @@
-package com.vouchflow.sdk.storage
+package dev.vouchflow.sdk.storage
 
 import android.accounts.Account
 import android.accounts.AccountManager
 import android.content.Context
-import com.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.internal.VouchflowLogger
 
 /**
  * Persists the device token and pending enrollment placeholder via [AccountManager].
@@ -19,12 +19,12 @@ import com.vouchflow.sdk.internal.VouchflowLogger
  *
  * ## Permissions
  * No extra permissions are required. The stub authenticator service declared in the SDK's
- * manifest registers the account type "com.vouchflow.sdk" under the host app's UID.
+ * manifest registers the account type "dev.vouchflow.sdk" under the host app's UID.
  * OS-level enforcement then grants the host app full access to its own account type.
  *
  * ## Thread safety
  * [AccountManager.getUserData] and [setUserData] are fast Binder IPC calls. They are safe to
- * call on the calling thread; callers in [com.vouchflow.sdk.core.EnrollmentManager] already
+ * call on the calling thread; callers in [dev.vouchflow.sdk.core.EnrollmentManager] already
  * run on background dispatchers.
  */
 internal class AccountManagerStore(context: Context) {
@@ -78,7 +78,7 @@ internal class AccountManagerStore(context: Context) {
     }
 
     companion object {
-        private const val ACCOUNT_TYPE = "com.vouchflow.sdk"
+        private const val ACCOUNT_TYPE = "dev.vouchflow.sdk"
         private const val ACCOUNT_NAME = "vouchflow_device"
         private const val KEY_DEVICE_TOKEN = "device_token"
         private const val KEY_PENDING_TOKEN = "pending_device_token"

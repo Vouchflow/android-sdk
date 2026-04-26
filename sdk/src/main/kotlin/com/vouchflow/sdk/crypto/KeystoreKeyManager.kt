@@ -1,4 +1,4 @@
-package com.vouchflow.sdk.crypto
+package dev.vouchflow.sdk.crypto
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -8,7 +8,7 @@ import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import androidx.biometric.BiometricPrompt
-import com.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.internal.VouchflowLogger
 import java.security.*
 import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
@@ -26,8 +26,8 @@ import java.security.spec.ECGenParameterSpec
  *
  * ## Key validity check
  * [isKeyValid] test-signs with a dummy payload and catches [KeyPermanentlyInvalidatedException].
- * Result is **not** cached here — [com.vouchflow.sdk.core.EnrollmentManager] caches it for the
- * app session after the first [com.vouchflow.sdk.core.EnrollmentManager.ensureEnrolled] call.
+ * Result is **not** cached here — [dev.vouchflow.sdk.core.EnrollmentManager] caches it for the
+ * app session after the first [dev.vouchflow.sdk.core.EnrollmentManager.ensureEnrolled] call.
  *
  * ## Signing with biometric
  * The private key requires biometric authentication on every use. The key operation must be
@@ -168,7 +168,7 @@ internal class KeystoreKeyManager(private val context: Context) {
 
     /**
      * Initialises a [Signature] with the Keystore private key and wraps it in a
-     * [BiometricPrompt.CryptoObject] ready for [com.vouchflow.sdk.core.VerificationManager].
+     * [BiometricPrompt.CryptoObject] ready for [dev.vouchflow.sdk.core.VerificationManager].
      *
      * The [Signature] is pre-initialised for signing but NOT yet authenticated — biometric
      * authentication via [BiometricPrompt] completes the unlock. After successful authentication,
@@ -212,7 +212,7 @@ internal class KeystoreKeyManager(private val context: Context) {
 
     companion object {
         private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
-        private const val KEY_ALIAS = "com.vouchflow.sdk.key_v1"
+        private const val KEY_ALIAS = "dev.vouchflow.sdk.key_v1"
         internal const val SIGNING_ALGORITHM = "SHA256withECDSA"
     }
 }

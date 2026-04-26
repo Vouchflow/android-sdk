@@ -10,7 +10,7 @@
 
         <!--
             Stub AccountManager authenticator for cross-reinstall device token persistence.
-            Declares account type "com.vouchflow.sdk" so the SDK can store tokens at the OS
+            Declares account type "dev.vouchflow.sdk" so the SDK can store tokens at the OS
             account level, outside the app data sandbox. Survives app uninstall on most devices.
 
             NOTE: android:process is intentionally absent — the service runs in the app's main
@@ -18,7 +18,7 @@
             without requiring AUTHENTICATE_ACCOUNTS permission from the host app.
         -->
         <service
-            android:name="com.vouchflow.sdk.internal.VouchflowAuthenticatorService"
+            android:name="dev.vouchflow.sdk.internal.VouchflowAuthenticatorService"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
@@ -35,7 +35,7 @@
             during manifest merge, guaranteeing a unique authority per app.
         -->
         <provider
-            android:name="com.vouchflow.sdk.internal.VouchflowInitProvider"
+            android:name="dev.vouchflow.sdk.internal.VouchflowInitProvider"
             android:authorities="${applicationId}.vouchflowinit"
             android:exported="false"
             android:initOrder="100" />

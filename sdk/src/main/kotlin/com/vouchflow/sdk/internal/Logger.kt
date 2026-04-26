@@ -1,4 +1,4 @@
-package com.vouchflow.sdk.internal
+package dev.vouchflow.sdk.internal
 
 import android.util.Log
 

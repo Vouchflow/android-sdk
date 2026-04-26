@@ -1,4 +1,4 @@
-package com.vouchflow.sdk.network.models
+package dev.vouchflow.sdk.network.models
 
 import com.google.gson.annotations.SerializedName
 

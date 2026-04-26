@@ -1,9 +1,9 @@
-package com.vouchflow.sdk.crypto
+package dev.vouchflow.sdk.crypto
 
 import android.content.Context
 import com.google.android.play.core.integrity.IntegrityManagerFactory
 import com.google.android.play.core.integrity.IntegrityTokenRequest
-import com.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.internal.VouchflowLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext

@@ -1,8 +1,8 @@
-package com.vouchflow.sdk.network
+package dev.vouchflow.sdk.network
 
 import android.content.Context
-import com.vouchflow.sdk.VouchflowConfig
-import com.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.VouchflowConfig
+import dev.vouchflow.sdk.internal.VouchflowLogger
 import okhttp3.CertificatePinner
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient

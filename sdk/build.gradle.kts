@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.vouchflow.sdk"
+    namespace = "dev.vouchflow.sdk"
     compileSdk = 35
 
     defaultConfig {

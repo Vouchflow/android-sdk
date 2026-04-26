@@ -1,10 +1,10 @@
-package com.vouchflow.sdk.internal
+package dev.vouchflow.sdk.internal
 
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
-import com.vouchflow.sdk.Vouchflow
+import dev.vouchflow.sdk.Vouchflow
 
 /**
  * ContentProvider that captures [applicationContext] before [Vouchflow.configure] is ever called.
