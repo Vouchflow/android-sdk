@@ -1,16 +1,16 @@
-package com.vouchflow.sdk
+package dev.vouchflow.sdk
 
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
-import com.vouchflow.sdk.core.EnrollmentManager
-import com.vouchflow.sdk.core.FallbackManager
-import com.vouchflow.sdk.core.VerificationManager
-import com.vouchflow.sdk.crypto.ChallengeProcessor
-import com.vouchflow.sdk.crypto.KeystoreKeyManager
-import com.vouchflow.sdk.internal.VouchflowLogger
-import com.vouchflow.sdk.network.VouchflowAPIClient
-import com.vouchflow.sdk.storage.AccountManagerStore
-import com.vouchflow.sdk.storage.SessionCache
+import dev.vouchflow.sdk.core.EnrollmentManager
+import dev.vouchflow.sdk.core.FallbackManager
+import dev.vouchflow.sdk.core.VerificationManager
+import dev.vouchflow.sdk.crypto.ChallengeProcessor
+import dev.vouchflow.sdk.crypto.KeystoreKeyManager
+import dev.vouchflow.sdk.internal.VouchflowLogger
+import dev.vouchflow.sdk.network.VouchflowAPIClient
+import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.SessionCache
 
 /**
  * The main entry point for the Vouchflow SDK.
@@ -24,7 +24,7 @@ import com.vouchflow.sdk.storage.SessionCache
  * )
  * ```
  * No [android.content.Context] argument is needed — the SDK captures it automatically
- * via a [com.vouchflow.sdk.internal.VouchflowInitProvider] content provider that initialises
+ * via a [dev.vouchflow.sdk.internal.VouchflowInitProvider] content provider that initialises
  * before [android.app.Application.onCreate].
  *
  * ## Verification
@@ -53,7 +53,7 @@ import com.vouchflow.sdk.storage.SessionCache
  */
 object Vouchflow {
 
-    /** Captured by [com.vouchflow.sdk.internal.VouchflowInitProvider] before configure() is called. */
+    /** Captured by [dev.vouchflow.sdk.internal.VouchflowInitProvider] before configure() is called. */
     @Volatile internal var applicationContext: Context? = null
 
     @Volatile private var _instance: VouchflowInstance? = null
