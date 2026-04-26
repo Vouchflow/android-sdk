@@ -144,7 +144,7 @@ object Vouchflow {
             apiClient = apiClient
         )
 
-        return VouchflowInstance(verificationManager, fallbackManager)
+        return VouchflowInstance(verificationManager, fallbackManager, store)
     }
 }
 
@@ -155,8 +155,23 @@ object Vouchflow {
  */
 class VouchflowInstance internal constructor(
     private val verificationManager: VerificationManager,
-    private val fallbackManager: FallbackManager
+    private val fallbackManager: FallbackManager,
+    private val store: dev.vouchflow.sdk.storage.AccountManagerStore
 ) {
+
+    /**
+     * The locally-cached device token if this device has previously enrolled, null otherwise.
+     *
+     * Reading this property requires no biometric prompt, no network call, and no Activity.
+     * It is safe to call at cold start before the first [verify] — use it to derive at-rest
+     * keys or seed local databases before any user interaction is required.
+     *
+     * Returns null on first launch (before the first successful [verify]) and after [Vouchflow.reset].
+     * The value is stable across [verify] calls for the same enrolled device; it only changes on
+     * re-enrollment (e.g. after a biometric reconfiguration or app reinstall).
+     */
+    val cachedDeviceToken: String?
+        get() = store.readDeviceToken()
 
     // ── Verification ──────────────────────────────────────────────────────────
 
