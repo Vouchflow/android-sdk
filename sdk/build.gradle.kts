@@ -63,7 +63,7 @@ mavenPublishing {
     signAllPublications()
 
     coordinates(
-        groupId = "com.vouchflow",
+        groupId = "dev.vouchflow",
         artifactId = "android-sdk",
         version = providers.gradleProperty("VERSION_NAME").getOrElse("1.0.0"),
     )
