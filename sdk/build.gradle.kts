@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("com.vanniktech.maven.publish") version "0.29.0"
 }
 
 android {
@@ -9,9 +10,6 @@ android {
 
     defaultConfig {
         minSdk = 28
-        // Library version surfaced in POM for consumers.
-        version = "1.0.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -58,4 +56,40 @@ dependencies {
     // Lifecycle — ProcessLifecycleOwner for background detection
     implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+}
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    coordinates(
+        groupId = "com.vouchflow",
+        artifactId = "android-sdk",
+        version = providers.gradleProperty("VERSION_NAME").getOrElse("1.0.0"),
+    )
+
+    pom {
+        name = "Vouchflow Android SDK"
+        description = "Device-native identity verification for Android apps."
+        url = "https://github.com/vouchflow/android-sdk"
+        inceptionYear = "2025"
+        licenses {
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+            }
+        }
+        developers {
+            developer {
+                id = "vouchflow"
+                name = "Vouchflow"
+                url = "https://github.com/vouchflow"
+            }
+        }
+        scm {
+            url = "https://github.com/vouchflow/android-sdk"
+            connection = "scm:git:git://github.com/vouchflow/android-sdk.git"
+            developerConnection = "scm:git:ssh://git@github.com/vouchflow/android-sdk.git"
+        }
+    }
 }
