@@ -94,4 +94,8 @@ mavenPublishing {
             developerConnection = "scm:git:ssh://git@github.com/vouchflow/android-sdk.git"
         }
     }
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.google.code.gson:gson:2.10.1")
 }
