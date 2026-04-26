@@ -1,4 +1,4 @@
-package com.vouchflow.sdk
+package dev.vouchflow.sdk
 
 /**
  * The environment the SDK operates in.
