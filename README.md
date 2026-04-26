@@ -1,5 +1,8 @@
 # Vouchflow Android SDK
 
+[![CI](https://github.com/vouchflow/android-sdk/actions/workflows/android.yml/badge.svg)](https://github.com/vouchflow/android-sdk/actions/workflows/android.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.vouchflow/android-sdk)](https://central.sonatype.com/artifact/com.vouchflow/android-sdk)
+
 Device-native identity verification for Android apps. Vouchflow uses Android Keystore cryptography and biometrics to verify that a user is operating from a known, trusted device — without passwords or third-party redirects.
 
 ## Requirements
@@ -305,3 +308,24 @@ The SDK pins the Vouchflow TLS certificate by default using the Let's Encrypt in
 - The SDK enforces TLS certificate pinning in production builds to prevent interception.
 - API keys are hashed before storage server-side — raw keys are never persisted.
 - Device tokens are stored in AccountManager, which persists across app reinstalls but is cleared on factory reset.
+
+## Releases
+
+Releases are published automatically to [Maven Central](https://central.sonatype.com/artifact/com.vouchflow/android-sdk) when a `v*` tag is pushed.
+
+```bash
+git tag v1.0.1 && git push origin v1.0.1
+```
+
+The CI pipeline runs tests and lint, then publishes and creates a GitHub release with auto-generated notes.
+
+### Required repository secrets
+
+| Secret | Description |
+|---|---|
+| `MAVEN_CENTRAL_USERNAME` | Sonatype Central Portal user token username |
+| `MAVEN_CENTRAL_PASSWORD` | Sonatype Central Portal user token password |
+| `SIGNING_KEY` | Armored GPG private key (`gpg --armor --export-secret-keys KEY_ID`) |
+| `SIGNING_PASSWORD` | GPG key passphrase |
+
+The `com.vouchflow` namespace must be verified at [central.sonatype.com](https://central.sonatype.com) via a DNS TXT record on `vouchflow.com` before the first publish.
