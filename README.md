@@ -19,7 +19,7 @@ Add the dependency to your app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.vouchflow:android-sdk:1.0.0")
+    implementation("dev.vouchflow:android-sdk:latest.release")
 }
 ```
 
@@ -27,7 +27,7 @@ Or in Groovy `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'dev.vouchflow:android-sdk:1.0.0'
+    implementation 'dev.vouchflow:android-sdk:latest.release'
 }
 ```
 
