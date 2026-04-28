@@ -240,19 +240,9 @@ internal class EnrollmentManager(
             val ks = java.security.KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
             val entry = ks.getEntry("dev.vouchflow.sdk.key_v1", null) as? java.security.KeyStore.PrivateKeyEntry
                 ?: return null
-            val ecKey = entry.certificate.publicKey as java.security.interfaces.ECPublicKey
-            val x = ecKey.w.affineX.toByteArray()
-            val y = ecKey.w.affineY.toByteArray()
-            val uncompressed = ByteArray(65)
-            uncompressed[0] = 0x04
-            fun copyCoord(coord: ByteArray, offset: Int) {
-                val stripped = coord.dropWhile { it == 0.toByte() }.toByteArray()
-                val start = offset + (32 - stripped.size.coerceAtMost(32))
-                stripped.copyInto(uncompressed, destinationOffset = start, startIndex = (stripped.size - 32).coerceAtLeast(0))
-            }
-            copyCoord(x, 1)
-            copyCoord(y, 33)
-            android.util.Base64.encodeToString(uncompressed, android.util.Base64.NO_WRAP)
+            // publicKey.encoded returns SubjectPublicKeyInfo DER (X.509), matching the format
+            // expected by the server's crypto.createPublicKey({ format: 'der', type: 'spki' }).
+            android.util.Base64.encodeToString(entry.certificate.publicKey.encoded, android.util.Base64.NO_WRAP)
         } catch (e: Exception) {
             null
         }
