@@ -236,6 +236,15 @@ class VouchflowInstance internal constructor(
     // ── Test harness utilities ────────────────────────────────────────────────
 
     /**
+     * For developer test harnesses: ensures the device is enrolled. Triggers enrollment if needed.
+     * On return, [cachedDeviceToken] will be non-null if enrollment succeeded.
+     *
+     * Do not use in production app code.
+     */
+    suspend fun ensureEnrolledForTesting() =
+        verificationManager.ensureEnrolledForTesting()
+
+    /**
      * For developer test harnesses: initiates a verify session on the server without biometric
      * authentication. The session is stored as the pending fallback session, so a subsequent
      * [requestFallback] call will work without requiring a cancelled biometric prompt.

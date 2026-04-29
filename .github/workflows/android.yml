@@ -18,11 +18,72 @@ jobs:
           distribution: temurin
           cache: gradle
 
+      - name: Install Android SDK platform 35
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
+
       - name: Run tests & lint
         run: ./gradlew :sdk:test :sdk:lint --stacktrace
 
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "system-images;android-33;default;x86_64" \
+            "emulator" \
+            "platform-tools" >/dev/null
+
+      - name: Create AVD
+        run: |
+          echo "no" | avdmanager create avd \
+            --name integration_avd \
+            --package "system-images;android-33;default;x86_64" \
+            --device "pixel_6" \
+            --force
+
+      # Run instrumented tests inside the emulator.
+      # PIN "1234" is set so Keystore key generation and DEVICE_CREDENTIAL tests can run.
+      # Biometric and no-auth tests are skipped automatically via assumeTrue/assumeFalse.
+      - name: Run instrumented integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          arch: x86_64
+          avd-name: integration_avd
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+            adb shell locksettings set-pin --old '' 1234
+            ./gradlew :sdk:connectedAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=\
+            dev.vouchflow.sdk.integration.EnrollmentIntegrationTest,\
+            dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest \
+              --stacktrace
+
   release:
-    needs: test
+    needs: [test, integration-test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -38,6 +99,11 @@ jobs:
           java-version: '17'
           distribution: temurin
           cache: gradle
+
+      - name: Install Android SDK platform 35
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
 
       - name: Bump patch version
         id: bump

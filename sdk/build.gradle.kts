@@ -59,11 +59,21 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
-    // Test
+    // Unit tests
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("com.google.code.gson:gson:2.10.1")
+
+    // Instrumented integration tests
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    // FragmentActivity is available transitively via biometric → appcompat → fragment;
+    // no explicit appcompat dep needed (biometric pins appcompat:1.2.0 via strict constraint).
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    androidTestImplementation("junit:junit:4.13.2")
 }
 
 mavenPublishing {

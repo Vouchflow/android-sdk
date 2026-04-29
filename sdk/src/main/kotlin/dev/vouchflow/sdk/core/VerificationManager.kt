@@ -66,6 +66,16 @@ internal class VerificationManager(
      */
     @Volatile internal var pendingFallbackSessionId: String? = null
 
+    // ── Test harness utilities ────────────────────────────────────────────────
+
+    /**
+     * Triggers enrollment if not already enrolled. For developer test harnesses only.
+     * On return, the device token will be written to AccountManager.
+     */
+    internal suspend fun ensureEnrolledForTesting() {
+        enrollmentManager.ensureEnrolled()
+    }
+
     // ── Session initiation (test harness utility) ─────────────────────────────
 
     /**
