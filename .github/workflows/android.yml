@@ -68,9 +68,16 @@ jobs:
             --device "pixel_6" \
             --force
 
-      # Run instrumented tests inside the emulator.
-      # PIN "1234" is set so Keystore key generation and DEVICE_CREDENTIAL tests can run.
-      # Biometric and no-auth tests are skipped automatically via assumeTrue/assumeFalse.
+      # Two-pass test run against the same emulator session:
+      #
+      # Pass 1 — no auth (before PIN is set):
+      #   noAuth_verifyThrowsError runs; verify() must throw EnrollmentFailed or
+      #   BiometricUnavailable on a device with no credential configured.
+      #
+      # Pass 2 — device credential (after PIN "1234" is set):
+      #   EnrollmentIntegrationTest and passcodeEnrolled_enrollAndVerifySucceeds run.
+      #   biometricEnrolled skips (no fingerprint); noAuth skips (PIN now active).
+      #   Biometric coverage is handled by the separate integration-test-biometric job.
       - name: Run instrumented integration tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -81,11 +88,102 @@ jobs:
           disable-animations: true
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+            ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#noAuth_verifyThrowsError" --stacktrace
             adb shell locksettings set-pin --old '' 1234
             ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.EnrollmentIntegrationTest,dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest" --stacktrace
 
+  integration-test-biometric:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Add Android cmdline-tools to PATH
+        run: echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "system-images;android-33;default;x86_64" \
+            "emulator" \
+            "platform-tools" >/dev/null
+
+      - name: Create AVD with fingerprint sensor
+        run: |
+          echo "no" | avdmanager create avd \
+            --name biometric_avd \
+            --package "system-images;android-33;default;x86_64" \
+            --device "pixel_6" \
+            --force
+          sed -i '/^hw\.fingerprint=/d' "$HOME/.android/avd/biometric_avd.avd/config.ini"
+          echo "hw.fingerprint=yes" >> "$HOME/.android/avd/biometric_avd.avd/config.ini"
+
+      # Fingerprint enrollment and biometric integration test.
+      #
+      # Enrollment flow (automated via keyevent + adb emu finger touch):
+      #   1. Set PIN 1234 (required before fingerprint enrollment on Android).
+      #   2. Open the fingerprint enrollment wizard via intent.
+      #   3. Tab to the first button (Get started / Start) and press Enter.
+      #   4. Type PIN on the confirmation screen and press Enter.
+      #   5. Send 10 finger touch events (6 are required; 10 for margin).
+      #   6. Dismiss the completion screen with Enter.
+      #
+      # Test execution:
+      #   A background watcher sends adb emu finger touch 1 every second so any
+      #   BiometricPrompt that appears during the test is accepted automatically.
+      #   BiometricSimulator.isBiometricStrongAvailable() gates the test; if enrollment
+      #   failed for any reason the test skips rather than failing.
+      - name: Run biometric integration test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          arch: x86_64
+          avd-name: biometric_avd
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+            adb shell locksettings set-pin --old '' 1234
+            sleep 2
+            adb shell input keyevent 82
+            sleep 1
+            adb shell am start -a android.settings.FINGERPRINT_ENROLL_INTRODUCTION
+            sleep 4
+            adb shell input keyevent 61
+            sleep 0.5
+            adb shell input keyevent 23
+            sleep 3
+            adb shell input text 1234
+            sleep 0.3
+            adb shell input keyevent 66
+            sleep 3
+            for i in $(seq 1 10); do adb emu finger touch 1; sleep 1; done
+            sleep 2
+            adb shell input keyevent 23
+            sleep 1
+            (while true; do adb emu finger touch 1 2>/dev/null; sleep 1; done) &
+            WATCHER_PID=$!
+            ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#biometricEnrolled_enrollAndVerifySucceeds" --stacktrace
+            kill $WATCHER_PID 2>/dev/null || true
+
   release:
-    needs: [test, integration-test]
+    needs: [test, integration-test, integration-test-biometric]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
