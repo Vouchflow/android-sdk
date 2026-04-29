@@ -61,8 +61,8 @@ class PasskeyTypeIntegrationTest {
 
     @Before
     fun setUp() {
-        StagingTestConfig.configure()
         StagingTestConfig.reset()
+        StagingTestConfig.configure()
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     }
 

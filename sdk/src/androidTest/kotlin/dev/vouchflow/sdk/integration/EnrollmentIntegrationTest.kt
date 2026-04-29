@@ -28,8 +28,8 @@ class EnrollmentIntegrationTest {
 
     @Before
     fun setUp() {
-        StagingTestConfig.configure()
         StagingTestConfig.reset()
+        StagingTestConfig.configure()
     }
 
     @After

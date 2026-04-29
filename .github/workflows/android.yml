@@ -60,14 +60,6 @@ jobs:
             "emulator" \
             "platform-tools" >/dev/null
 
-      - name: Create AVD
-        run: |
-          echo "no" | avdmanager create avd \
-            --name integration_avd \
-            --package "system-images;android-33;default;x86_64" \
-            --device "pixel_6" \
-            --force
-
       # Two-pass test run against the same emulator session:
       #
       # Pass 1 — no auth (before PIN is set):
@@ -128,7 +120,6 @@ jobs:
           echo "no" | avdmanager create avd \
             --name biometric_avd \
             --package "system-images;android-33;default;x86_64" \
-            --device "pixel_6" \
             --force
           sed -i '/^hw\.fingerprint=/d' "$HOME/.android/avd/biometric_avd.avd/config.ini"
           echo "hw.fingerprint=yes" >> "$HOME/.android/avd/biometric_avd.avd/config.ini"
