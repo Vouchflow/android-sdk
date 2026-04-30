@@ -178,42 +178,48 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
+          # The emulator-runner action executes each script line in its own
+          # `sh -c` invocation, so shell variables ($WATCHER_PID, $!) and
+          # multi-line constructs (subshells, while/do/done blocks) do not
+          # work across lines. That broke earlier kill/wait cleanup chains —
+          # variables were always empty in the kill line and the orphan
+          # watcher kept the job alive until GitHub's 6h timeout.
+          # Wrap the whole post-boot sequence in one `bash -c` so the entire
+          # block runs in a single shell where variables persist and
+          # backgrounded jobs can be cleaned up properly.
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-            adb shell locksettings set-pin --old '' 1234
-            sleep 2
-            adb shell input keyevent 82
-            sleep 1
-            # The android.settings.FINGERPRINT_ENROLL_INTRODUCTION intent
-            # action isn't registered on API 33 system images (default OR
-            # google_apis), so launch the activity directly. The component
-            # name has been stable in Settings since API 28.
-            adb shell am start -n com.android.settings/com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
-            sleep 4
-            adb shell input keyevent 61
-            sleep 0.5
-            adb shell input keyevent 23
-            sleep 3
-            adb shell input text 1234
-            sleep 0.3
-            adb shell input keyevent 66
-            sleep 3
-            for i in $(seq 1 10); do adb emu finger touch 1; sleep 1; done
-            sleep 2
-            adb shell input keyevent 23
-            sleep 1
-            # Flag-file watcher: the loop self-terminates when the flag
-            # disappears, which avoids the orphan-sleep child that previously
-            # kept this job running for hours after tests finished. No setsid
-            # or process-group kill needed.
-            WATCHER_FLAG=$(mktemp /tmp/finger_watcher.XXXXXX)
-            (while [ -f "$WATCHER_FLAG" ]; do
-               adb emu finger touch 1 2>/dev/null
-               sleep 1
-             done) &
-            ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#biometricEnrolled_enrollAndVerifySucceeds" --stacktrace
-            rm -f "$WATCHER_FLAG"
-            wait 2>/dev/null || true
+            bash -c '
+              set -e
+              adb shell locksettings set-pin --old "" 1234
+              sleep 2
+              adb shell input keyevent 82
+              sleep 1
+              # FINGERPRINT_ENROLL_INTRODUCTION action is not registered on
+              # API 33 system images, so launch the activity directly.
+              adb shell am start -n com.android.settings/com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
+              sleep 4
+              adb shell input keyevent 61
+              sleep 0.5
+              adb shell input keyevent 23
+              sleep 3
+              adb shell input text 1234
+              sleep 0.3
+              adb shell input keyevent 66
+              sleep 3
+              for i in $(seq 1 10); do adb emu finger touch 1; sleep 1; done
+              sleep 2
+              adb shell input keyevent 23
+              sleep 1
+              WATCHER_FLAG=$(mktemp /tmp/finger_watcher.XXXXXX)
+              ( while [ -f "$WATCHER_FLAG" ]; do adb emu finger touch 1 2>/dev/null; sleep 1; done ) &
+              set +e
+              ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#biometricEnrolled_enrollAndVerifySucceeds" --stacktrace
+              GRADLE_EXIT=$?
+              rm -f "$WATCHER_FLAG"
+              wait 2>/dev/null || true
+              exit $GRADLE_EXIT
+            '
 
   release:
     needs: [test, integration-test, integration-test-biometric]
