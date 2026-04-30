@@ -216,30 +216,40 @@ jobs:
           sleep 1
           adb shell am start -n com.android.settings/com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
           sleep 4
-          shot 01_intro && dump 01_intro
-          # Click through the multi-screen Pixel Imprint onboarding. The intro
-          # uses "MORE" buttons before the actual "I agree"/"Get started" CTA.
-          for i in 1 2 3 4; do
-            tap_text "more" && sleep 2 && shot "02_more_$i" && dump "02_more_$i" && continue
-            tap_text "i agree" && sleep 2 && shot "02_agree" && dump "02_agree" && break
-            tap_text "get started" && sleep 2 && shot "02_started" && dump "02_started" && break
-            echo "no MORE/I agree/Get started button found at iter $i"
-            break
-          done
-          sleep 2
-          shot 03_after_intro && dump 03_after_intro
-          # PIN confirmation. The PIN field auto-focuses; type and submit.
+          # Step 1: PIN re-entry. Launching the enroll intent prompts for the
+          # device PIN before the Pixel Imprint UI appears.
+          shot 01_pin_prompt && dump 01_pin_prompt
           adb shell input text 1234
           sleep 0.5
           adb shell input keyevent 66
           sleep 4
-          shot 04_after_pin && dump 04_after_pin
-          # Send finger touches to enrol. Pixel Imprint needs ~6 touches.
+          shot 02_after_pin && dump 02_after_pin
+          # Step 2: walk through the Pixel Imprint onboarding ("MORE", then
+          # "I agree" / "Get started") until we land on an enrollment screen.
+          for i in 1 2 3 4 5; do
+            if tap_text "more"; then
+              sleep 2; shot "03_more_$i"; dump "03_more_$i"; continue
+            fi
+            if tap_text "i agree"; then
+              sleep 2; shot 03_agree; dump 03_agree; break
+            fi
+            if tap_text "get started"; then
+              sleep 2; shot 03_started; dump 03_started; break
+            fi
+            echo "no MORE/I agree/Get started button at iter $i — assuming enrollment screen"
+            break
+          done
+          sleep 2
+          shot 04_pre_enroll && dump 04_pre_enroll
+          # Step 3: send finger touches to enrol. Pixel Imprint requires ~6
+          # touches; send 12 for margin.
           for i in $(seq 1 12); do adb emu finger touch 1; sleep 1; done
           sleep 2
           shot 05_after_touches && dump 05_after_touches
-          # Click "Done" if present.
-          tap_text "done" || adb shell input keyevent 23
+          # Step 4: dismiss the completion screen.
+          if ! tap_text "done"; then
+            tap_text "next" || adb shell input keyevent 23
+          fi
           sleep 2
           shot 06_final && dump 06_final
           # Confirm enrollment took effect.
