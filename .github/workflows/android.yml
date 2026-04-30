@@ -120,9 +120,13 @@ jobs:
           echo "no" | avdmanager create avd \
             --name biometric_avd \
             --package "system-images;android-33;default;x86_64" \
-            --force
-          sed -i '/^hw\.fingerprint=/d' "$HOME/.android/avd/biometric_avd.avd/config.ini"
-          echo "hw.fingerprint=yes" >> "$HOME/.android/avd/biometric_avd.avd/config.ini"
+            --force 2>&1
+          # ANDROID_AVD_HOME may differ from ~/.android/avd on some runners
+          AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+          CONFIG="$AVD_HOME/biometric_avd.avd/config.ini"
+          mkdir -p "$(dirname "$CONFIG")"
+          sed -i '/^hw\.fingerprint=/d' "$CONFIG" 2>/dev/null || true
+          echo "hw.fingerprint=yes" >> "$CONFIG"
 
       # Fingerprint enrollment and biometric integration test.
       #
