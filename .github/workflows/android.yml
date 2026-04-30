@@ -183,7 +183,11 @@ jobs:
             sleep 2
             adb shell input keyevent 82
             sleep 1
-            adb shell am start -a android.settings.FINGERPRINT_ENROLL_INTRODUCTION
+            # The android.settings.FINGERPRINT_ENROLL_INTRODUCTION intent
+            # action isn't registered on API 33 system images (default OR
+            # google_apis), so launch the activity directly. The component
+            # name has been stable in Settings since API 28.
+            adb shell am start -n com.android.settings/com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
             sleep 4
             adb shell input keyevent 61
             sleep 0.5
