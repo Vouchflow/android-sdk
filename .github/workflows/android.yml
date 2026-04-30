@@ -189,24 +189,50 @@ jobs:
             adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1 || return 1
             python3 - "$target" <<'PY'
           import re, sys, subprocess
-          target = sys.argv[1].lower()
+          target = sys.argv[1].lower().strip()
           xml = open('/tmp/ui.xml').read()
-          for m in re.finditer(r'text="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml):
-              text, x1, y1, x2, y2 = m.group(1), *map(int, m.groups()[1:])
-              if target in text.lower():
-                  cx, cy = (x1+x2)//2, (y1+y2)//2
-                  print(f"tap '{text}' at {cx},{cy}", file=sys.stderr)
-                  subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)
-                  sys.exit(0)
-          # also match content-desc when text is empty
-          for m in re.finditer(r'content-desc="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml):
-              text, x1, y1, x2, y2 = m.group(1), *map(int, m.groups()[1:])
-              if target in text.lower():
-                  cx, cy = (x1+x2)//2, (y1+y2)//2
-                  print(f"tap (desc) '{text}' at {cx},{cy}", file=sys.stderr)
-                  subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)
-                  sys.exit(0)
-          sys.exit(1)
+          # Match exact text (case-insensitive) on a clickable element. Substring
+          # matches were tapping things like "Learn more" links instead of the
+          # MORE button. Prefer clickable=true elements, fall back to any.
+          node_re = re.compile(r'<node[^>]*?>')
+          best = None
+          for m in node_re.finditer(xml):
+              node = m.group(0)
+              tm = re.search(r'text="([^"]*)"', node)
+              if not tm:
+                  continue
+              text = tm.group(1).strip().lower()
+              if text != target:
+                  continue
+              bm = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', node)
+              if not bm:
+                  continue
+              x1, y1, x2, y2 = map(int, bm.groups())
+              clickable = 'clickable="true"' in node
+              if clickable:
+                  best = (text, x1, y1, x2, y2, "clickable")
+                  break
+              if best is None:
+                  best = (text, x1, y1, x2, y2, "non-clickable")
+          if best is None:
+              # Fall back to content-desc exact match.
+              for m in node_re.finditer(xml):
+                  node = m.group(0)
+                  cm = re.search(r'content-desc="([^"]*)"', node)
+                  if not cm or cm.group(1).strip().lower() != target:
+                      continue
+                  bm = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', node)
+                  if not bm:
+                      continue
+                  x1, y1, x2, y2 = map(int, bm.groups())
+                  best = (target, x1, y1, x2, y2, "desc")
+                  break
+          if best is None:
+              sys.exit(1)
+          text, x1, y1, x2, y2, kind = best
+          cx, cy = (x1+x2)//2, (y1+y2)//2
+          print(f"tap [{kind}] '{text}' at {cx},{cy}", file=sys.stderr)
+          subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)
           PY
           }
           adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
