@@ -108,10 +108,13 @@ jobs:
       - name: Install SDK components
         run: |
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          # google_apis image has the full Settings app — required because the
+          # fingerprint enrollment wizard intent (FINGERPRINT_ENROLL_INTRODUCTION)
+          # is not registered on the bare default image.
           sdkmanager \
             "platforms;android-33" \
             "build-tools;33.0.2" \
-            "system-images;android-33;default;x86_64" \
+            "system-images;android-33;google_apis;x86_64" \
             "emulator" \
             "platform-tools" >/dev/null
 
@@ -137,11 +140,11 @@ jobs:
             "hw.gpu.enabled=yes" \
             "hw.gpu.mode=auto" \
             "hw.ramSize=2048" \
-            "image.sysdir.1=system-images/android-33/default/x86_64/" \
+            "image.sysdir.1=system-images/android-33/google_apis/x86_64/" \
             "runtime.network.latency=none" \
             "runtime.network.speed=full" \
-            "tag.display=Default" \
-            "tag.id=default" \
+            "tag.display=Google APIs" \
+            "tag.id=google_apis" \
             "vm.heapSize=256" \
             > "$AVD_BASE/biometric_avd.avd/config.ini"
           # If ANDROID_AVD_HOME is set and differs, mirror the descriptor there
@@ -194,10 +197,15 @@ jobs:
             sleep 2
             adb shell input keyevent 23
             sleep 1
-            (while true; do adb emu finger touch 1 2>/dev/null; sleep 1; done) &
+            # setsid puts the watcher in its own process group; killing -PGID
+            # signals the loop AND its sleep child, avoiding the orphan-sleep
+            # hang that previously kept this job running for an hour after
+            # tests finished.
+            setsid bash -c 'while true; do adb emu finger touch 1 2>/dev/null; sleep 1; done' &
             WATCHER_PID=$!
             ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#biometricEnrolled_enrollAndVerifySucceeds" --stacktrace
-            kill $WATCHER_PID 2>/dev/null || true
+            kill -TERM -- -$WATCHER_PID 2>/dev/null || true
+            wait 2>/dev/null || true
 
   release:
     needs: [test, integration-test, integration-test-biometric]
