@@ -175,9 +175,11 @@ jobs:
       # previous step and having the action just execute the file.
       - name: Stage biometric test script
         run: |
+          mkdir -p /tmp/biometric_screens
           cat > /tmp/biometric_test.sh <<'SCRIPT'
           #!/bin/bash
           set -e
+          shot() { adb shell screencap -p "/sdcard/$1.png" && adb pull "/sdcard/$1.png" "/tmp/biometric_screens/$1.png" >/dev/null; }
           adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
           adb shell locksettings set-pin 1234
           sleep 2
@@ -185,18 +187,25 @@ jobs:
           sleep 1
           adb shell am start -n com.android.settings/com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
           sleep 4
+          shot 01_intro
           adb shell input keyevent 61
           sleep 0.5
           adb shell input keyevent 23
           sleep 3
+          shot 02_after_intro_enter
           adb shell input text 1234
           sleep 0.3
           adb shell input keyevent 66
           sleep 3
+          shot 03_after_pin
           for i in $(seq 1 10); do adb emu finger touch 1; sleep 1; done
           sleep 2
+          shot 04_after_touches
           adb shell input keyevent 23
           sleep 1
+          shot 05_final
+          # Confirm enrollment took effect.
+          adb shell dumpsys fingerprint > /tmp/biometric_screens/fingerprint_dump.txt 2>&1 || true
           WATCHER_FLAG=$(mktemp /tmp/finger_watcher.XXXXXX)
           ( while [ -f "$WATCHER_FLAG" ]; do adb emu finger touch 1 2>/dev/null; sleep 1; done ) &
           set +e
@@ -219,6 +228,14 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: /tmp/biometric_test.sh
+
+      - name: Upload enrollment screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: biometric-enrollment-screens
+          path: /tmp/biometric_screens/
+          if-no-files-found: ignore
 
   release:
     needs: [test, integration-test, integration-test-biometric]

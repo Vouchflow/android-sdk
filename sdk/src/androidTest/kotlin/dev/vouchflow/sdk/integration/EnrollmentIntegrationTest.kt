@@ -101,10 +101,13 @@ class EnrollmentIntegrationTest {
         val firstToken = Vouchflow.shared.cachedDeviceToken
         assertNotNull(firstToken)
 
+        // reset() nulls the singleton, so accessing Vouchflow.shared between
+        // reset and configure throws NotConfigured. Reconfigure first, then
+        // assert that the freshly re-initialised SDK has no cached token.
         StagingTestConfig.reset()
+        StagingTestConfig.configure()
         assertNull("Device token must be null after reset", Vouchflow.shared.cachedDeviceToken)
 
-        StagingTestConfig.configure()
         runBlocking { Vouchflow.shared.ensureEnrolledForTesting() }
         val secondToken = Vouchflow.shared.cachedDeviceToken
 
