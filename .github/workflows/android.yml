@@ -169,6 +169,7 @@ jobs:
       #   BiometricSimulator.isBiometricStrongAvailable() gates the test; if enrollment
       #   failed for any reason the test skips rather than failing.
       - name: Run biometric integration test
+        timeout-minutes: 30
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 33
@@ -201,14 +202,17 @@ jobs:
             sleep 2
             adb shell input keyevent 23
             sleep 1
-            # setsid puts the watcher in its own process group; killing -PGID
-            # signals the loop AND its sleep child, avoiding the orphan-sleep
-            # hang that previously kept this job running for an hour after
-            # tests finished.
-            setsid bash -c 'while true; do adb emu finger touch 1 2>/dev/null; sleep 1; done' &
-            WATCHER_PID=$!
+            # Flag-file watcher: the loop self-terminates when the flag
+            # disappears, which avoids the orphan-sleep child that previously
+            # kept this job running for hours after tests finished. No setsid
+            # or process-group kill needed.
+            WATCHER_FLAG=$(mktemp /tmp/finger_watcher.XXXXXX)
+            (while [ -f "$WATCHER_FLAG" ]; do
+               adb emu finger touch 1 2>/dev/null
+               sleep 1
+             done) &
             ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#biometricEnrolled_enrollAndVerifySucceeds" --stacktrace
-            kill -TERM -- -$WATCHER_PID 2>/dev/null || true
+            rm -f "$WATCHER_FLAG"
             wait 2>/dev/null || true
 
   release:
