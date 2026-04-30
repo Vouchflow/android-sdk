@@ -81,7 +81,7 @@ jobs:
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
             ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#noAuth_verifyThrowsError" --stacktrace
-            adb shell locksettings set-pin --old '' 1234
+            adb shell locksettings set-pin 1234
             ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.EnrollmentIntegrationTest,dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest" --stacktrace
 
   integration-test-biometric:
@@ -179,7 +179,7 @@ jobs:
           #!/bin/bash
           set -e
           adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-          adb shell locksettings set-pin --old '' 1234
+          adb shell locksettings set-pin 1234
           sleep 2
           adb shell input keyevent 82
           sleep 1
