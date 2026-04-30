@@ -117,16 +117,38 @@ jobs:
 
       - name: Create AVD with fingerprint sensor
         run: |
-          echo "no" | avdmanager create avd \
-            --name biometric_avd \
-            --package "system-images;android-33;default;x86_64" \
-            --force 2>&1
-          # ANDROID_AVD_HOME may differ from ~/.android/avd on some runners
-          AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
-          CONFIG="$AVD_HOME/biometric_avd.avd/config.ini"
-          mkdir -p "$(dirname "$CONFIG")"
-          sed -i '/^hw\.fingerprint=/d' "$CONFIG" 2>/dev/null || true
-          echo "hw.fingerprint=yes" >> "$CONFIG"
+          # avdmanager silently fails on this runner; create all AVD files manually.
+          # The emulator searches: $ANDROID_AVD_HOME, $ANDROID_SDK_HOME/avd, $HOME/.android/avd
+          # The emulator-runner (reactivecircus) always writes config patches to $HOME/.android/avd,
+          # so we keep the AVD data there and mirror the descriptor to ANDROID_AVD_HOME if needed.
+          AVD_BASE="$HOME/.android/avd"
+          mkdir -p "$AVD_BASE/biometric_avd.avd"
+          printf 'avd.ini.encoding=UTF-8\npath=%s/biometric_avd.avd\npath.rel=avd/biometric_avd.avd\ntarget=android-33\n' \
+            "$AVD_BASE" > "$AVD_BASE/biometric_avd.ini"
+          printf '%s\n' \
+            "AvdId=biometric_avd" \
+            "PlayStore.enabled=false" \
+            "abi.type=x86_64" \
+            "avd.ini.displayname=biometric_avd" \
+            "avd.ini.encoding=UTF-8" \
+            "disk.dataPartition.size=800M" \
+            "hw.cpu.arch=x86_64" \
+            "hw.fingerprint=yes" \
+            "hw.gpu.enabled=yes" \
+            "hw.gpu.mode=auto" \
+            "hw.ramSize=2048" \
+            "image.sysdir.1=system-images/android-33/default/x86_64/" \
+            "runtime.network.latency=none" \
+            "runtime.network.speed=full" \
+            "tag.display=Default" \
+            "tag.id=default" \
+            "vm.heapSize=256" \
+            > "$AVD_BASE/biometric_avd.avd/config.ini"
+          # If ANDROID_AVD_HOME is set and differs, mirror the descriptor there
+          if [ -n "${ANDROID_AVD_HOME:-}" ] && [ "$ANDROID_AVD_HOME" != "$AVD_BASE" ]; then
+            mkdir -p "$ANDROID_AVD_HOME"
+            cp "$AVD_BASE/biometric_avd.ini" "$ANDROID_AVD_HOME/biometric_avd.ini"
+          fi
 
       # Fingerprint enrollment and biometric integration test.
       #
