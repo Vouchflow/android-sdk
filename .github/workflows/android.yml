@@ -179,7 +179,7 @@ jobs:
           cat > /tmp/biometric_test.sh <<'SCRIPT'
           #!/bin/bash
           set -e
-          shot() { adb shell screencap -p "/sdcard/$1.png" && adb pull "/sdcard/$1.png" "/tmp/biometric_screens/$1.png" >/dev/null; }
+          shot() { adb shell screencap -p "/sdcard/$1.png" 2>/dev/null && adb pull "/sdcard/$1.png" "/tmp/biometric_screens/$1.png" 2>/dev/null || echo "shot $1 failed (continuing)"; }
           adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
           adb shell locksettings set-pin 1234
           sleep 2
