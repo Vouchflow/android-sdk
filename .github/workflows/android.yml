@@ -180,6 +180,35 @@ jobs:
           #!/bin/bash
           set -e
           shot() { adb shell screencap -p "/sdcard/$1.png" 2>/dev/null && adb pull "/sdcard/$1.png" "/tmp/biometric_screens/$1.png" 2>/dev/null || echo "shot $1 failed (continuing)"; }
+          dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb pull /sdcard/ui.xml "/tmp/biometric_screens/$1.xml" 2>/dev/null || echo "dump $1 failed (continuing)"; }
+          # Tap a button by visible text. Looks up bounds in the current UI
+          # hierarchy; centres the tap. Returns 1 if not found.
+          tap_text() {
+            local target="$1"
+            adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
+            adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1 || return 1
+            python3 - "$target" <<'PY'
+          import re, sys, subprocess
+          target = sys.argv[1].lower()
+          xml = open('/tmp/ui.xml').read()
+          for m in re.finditer(r'text="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml):
+              text, x1, y1, x2, y2 = m.group(1), *map(int, m.groups()[1:])
+              if target in text.lower():
+                  cx, cy = (x1+x2)//2, (y1+y2)//2
+                  print(f"tap '{text}' at {cx},{cy}", file=sys.stderr)
+                  subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)
+                  sys.exit(0)
+          # also match content-desc when text is empty
+          for m in re.finditer(r'content-desc="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml):
+              text, x1, y1, x2, y2 = m.group(1), *map(int, m.groups()[1:])
+              if target in text.lower():
+                  cx, cy = (x1+x2)//2, (y1+y2)//2
+                  print(f"tap (desc) '{text}' at {cx},{cy}", file=sys.stderr)
+                  subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)
+                  sys.exit(0)
+          sys.exit(1)
+          PY
+          }
           adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
           adb shell locksettings set-pin 1234
           sleep 2
@@ -187,25 +216,39 @@ jobs:
           sleep 1
           adb shell am start -n com.android.settings/com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
           sleep 4
-          shot 01_intro
-          adb shell input keyevent 61
-          sleep 0.5
-          adb shell input keyevent 23
-          sleep 3
-          shot 02_after_intro_enter
-          adb shell input text 1234
-          sleep 0.3
-          adb shell input keyevent 66
-          sleep 3
-          shot 03_after_pin
-          for i in $(seq 1 10); do adb emu finger touch 1; sleep 1; done
+          shot 01_intro && dump 01_intro
+          # Click through the multi-screen Pixel Imprint onboarding. The intro
+          # uses "MORE" buttons before the actual "I agree"/"Get started" CTA.
+          for i in 1 2 3 4; do
+            tap_text "more" && sleep 2 && shot "02_more_$i" && dump "02_more_$i" && continue
+            tap_text "i agree" && sleep 2 && shot "02_agree" && dump "02_agree" && break
+            tap_text "get started" && sleep 2 && shot "02_started" && dump "02_started" && break
+            echo "no MORE/I agree/Get started button found at iter $i"
+            break
+          done
           sleep 2
-          shot 04_after_touches
-          adb shell input keyevent 23
-          sleep 1
-          shot 05_final
+          shot 03_after_intro && dump 03_after_intro
+          # PIN confirmation. The PIN field auto-focuses; type and submit.
+          adb shell input text 1234
+          sleep 0.5
+          adb shell input keyevent 66
+          sleep 4
+          shot 04_after_pin && dump 04_after_pin
+          # Send finger touches to enrol. Pixel Imprint needs ~6 touches.
+          for i in $(seq 1 12); do adb emu finger touch 1; sleep 1; done
+          sleep 2
+          shot 05_after_touches && dump 05_after_touches
+          # Click "Done" if present.
+          tap_text "done" || adb shell input keyevent 23
+          sleep 2
+          shot 06_final && dump 06_final
           # Confirm enrollment took effect.
           adb shell dumpsys fingerprint > /tmp/biometric_screens/fingerprint_dump.txt 2>&1 || true
+          # Sanity check: if dumpsys shows zero enrolled prints, fail loudly so
+          # the job surface this rather than the test silently skipping.
+          if grep -qE '"prints":\[\{"id":0,"count":0' /tmp/biometric_screens/fingerprint_dump.txt; then
+            echo "::error::Fingerprint enrollment did not register any prints"
+          fi
           WATCHER_FLAG=$(mktemp /tmp/finger_watcher.XXXXXX)
           ( while [ -f "$WATCHER_FLAG" ]; do adb emu finger touch 1 2>/dev/null; sleep 1; done ) &
           set +e
@@ -213,6 +256,12 @@ jobs:
           GRADLE_EXIT=$?
           rm -f "$WATCHER_FLAG"
           wait 2>/dev/null || true
+          # Check if the test actually ran (didn't skip).
+          REPORT="sdk/build/reports/androidTests/connected/debug/com.android.builder.testing.api.TestServer.html"
+          if grep -qi "skipped" sdk/build/outputs/androidTest-results/connected/*.xml 2>/dev/null; then
+            echo "::error::Biometric integration test was skipped — fingerprint enrollment failed"
+            exit 1
+          fi
           exit $GRADLE_EXIT
           SCRIPT
           chmod +x /tmp/biometric_test.sh
