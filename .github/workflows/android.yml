@@ -3,6 +3,7 @@ name: Android SDK
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -323,8 +324,12 @@ jobs:
           if-no-files-found: ignore
 
   release:
+    # Tag-driven release. Pushing a `v*` tag (e.g. `git tag v2.0.0 && git push
+    # origin v2.0.0`) is the explicit signal to publish — main pushes only
+    # build/test, no version churn. The release version comes from the tag
+    # name itself, not a CI-side increment of gradle.properties.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: [test, integration-test, integration-test-biometric]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -348,24 +353,23 @@ jobs:
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
 
-      - name: Bump patch version
+      - name: Resolve release version from tag
         id: bump
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-          CURRENT=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
-          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT" | cut -d. -f2)
-          PATCH=$(echo "$CURRENT" | cut -d. -f3)
-          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
-          sed -i "s/^VERSION_NAME=.*/VERSION_NAME=$NEW_VERSION/" gradle.properties
-          git add gradle.properties
-          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
-          git push origin main
-          git tag "v$NEW_VERSION"
-          git push origin "v$NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          # Strip the leading 'v' from refs/tags/vX.Y.Z to get the bare semver.
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          if [[ ! "$TAG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.+-]+)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF' must be of the form vX.Y.Z (got '$TAG_VERSION')"
+            exit 1
+          fi
+          # Sanity-check the tag matches gradle.properties so a tagged release
+          # never disagrees with what the artifact embeds.
+          FILE_VERSION=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
+          if [[ "$TAG_VERSION" != "$FILE_VERSION" ]]; then
+            echo "::error::Tag $TAG_VERSION does not match gradle.properties VERSION_NAME=$FILE_VERSION. Update one before tagging."
+            exit 1
+          fi
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Maven Central
         run: |
