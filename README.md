@@ -9,7 +9,7 @@ Device-native identity verification for Android apps. Vouchflow uses Android Key
 
 - Android API 28+ (Android 9.0 Pie)
 - Kotlin 1.9+
-- Google Play Services (required for Play Integrity attestation)
+- A device with TEE or StrongBox key attestation support (KeyMaster 3+, present on virtually all Android 8+ devices). No Google Play Services dependency.
 
 ## Installation
 
@@ -218,7 +218,7 @@ Pass the most specific reason that applies:
 | `BIOMETRIC_FAILED` | Biometric attempt failed |
 | `BIOMETRIC_CANCELLED` | User cancelled the biometric prompt |
 | `BIOMETRIC_UNAVAILABLE` | No biometric hardware or biometrics not enrolled |
-| `ATTESTATION_UNAVAILABLE` | Play Integrity not available (no Google Play Services) |
+| `ATTESTATION_UNAVAILABLE` | Hardware key attestation not supported on this device (very old KeyMaster) |
 | `MINIMUM_CONFIDENCE_UNMET` | Device cannot meet the required confidence level |
 | `KEY_INVALIDATED` | Keystore key was invalidated (e.g. new biometric enrolled) |
 | `DEVELOPER_INITIATED` | Your app bypassed biometric for its own reasons |
@@ -249,7 +249,7 @@ Returned by `verify()`.
 | `biometricUsed` | `Boolean` | Biometric authentication was used for this verification |
 | `crossAppHistory` | `Boolean` | Device has verified across more than one Vouchflow-integrated app |
 | `anomalyFlags` | `List<String>` | Anomaly flags from the network graph — empty for clean devices |
-| `attestationVerified` | `Boolean` | Play Integrity was verified at enrollment time |
+| `attestationVerified` | `Boolean` | Hardware key attestation chain was rooted in the Google Hardware Attestation Root CA at enrollment time, with package name and signing-cert digest matching the registered values |
 
 ### `FallbackVerificationResult`
 
@@ -290,7 +290,7 @@ The SDK pins the Vouchflow TLS certificate by default using the Let's Encrypt in
 
 ## How it works
 
-1. **Enrollment** — On first launch, the SDK generates an EC P-256 key pair in the Android Keystore (StrongBox where available, TEE otherwise) and registers the device with the Vouchflow API. Play Integrity is used to verify device and app integrity at enrollment time. Enrollment is automatic and transparent to the user.
+1. **Enrollment** — On first launch, the SDK generates an EC P-256 key pair in the Android Keystore (StrongBox where available, TEE otherwise) with `setAttestationChallenge(idempotencyKey)` and registers the device with the Vouchflow API, including the Keystore Attestation certificate chain. The server walks the chain to the Google Hardware Attestation Root CA and verifies the device is real hardware, the calling app's package name and signing cert match what your account has registered, and the chain was generated for *this* enrollment (replay-safe). Enrollment is automatic and transparent to the user.
 
 2. **Verification** — When `verify()` is called, the SDK retrieves a challenge from the server, presents a biometric prompt (`BiometricPrompt` with `BIOMETRIC_STRONG`), and signs the challenge with the Keystore-backed private key inside the authenticated `BiometricPrompt` callback. The server verifies the signature against the enrolled public key.
 
