@@ -17,9 +17,22 @@ internal data class EnrollRequest(
     @SerializedName("strongbox_backed") val strongboxBacked: Boolean?
 ) {
     internal data class AttestationPayload(
-        @SerializedName("token") val token: String,
-        /** Not applicable for Android (Play Integrity has no key_id). Reserved for future use. */
-        @SerializedName("key_id") val keyId: String? = null
+        /**
+         * Apple App Attest base64 attestation object. Always null on Android.
+         */
+        @SerializedName("token") val token: String? = null,
+        /**
+         * Apple App Attest credential ID. Always null on Android.
+         */
+        @SerializedName("key_id") val keyId: String? = null,
+        /**
+         * Android Keystore Attestation certificate chain, leaf-first, each cert
+         * base64-encoded DER. Always null on iOS. The server walks the chain to
+         * the Google Hardware Attestation Root CA and parses the leaf's
+         * attestation extension to verify the challenge nonce, security level,
+         * and the calling app's package name + signing-key digest.
+         */
+        @SerializedName("cert_chain") val certChain: List<String>? = null,
     )
 }
 

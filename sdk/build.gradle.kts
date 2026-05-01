@@ -46,9 +46,6 @@ dependencies {
     // JSON
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Play Integrity (attestation)
-    implementation("com.google.android.play:integrity:1.4.0")
-
     // Biometric — 1.2.0-alpha accepts ComponentActivity (no AppCompat required)
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
 

@@ -7,6 +7,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
+import android.util.Base64
 import androidx.biometric.BiometricPrompt
 import dev.vouchflow.sdk.internal.VouchflowLogger
 import java.security.*
@@ -41,32 +42,61 @@ internal class KeystoreKeyManager(private val context: Context) {
     // ── Key generation ────────────────────────────────────────────────────────
 
     /**
+     * Result of [generateKeyPair]: the new keypair, the SubjectPublicKeyInfo-encoded base64
+     * public key, the StrongBox-backed flag, and the Keystore Attestation certificate chain
+     * leaf-first when an [attestationChallenge] was supplied. The chain proves to the server
+     * that the private key resides in real TEE/StrongBox hardware (rooted in the Google
+     * Hardware Attestation Root CA) and that the attestation was generated in response to
+     * the supplied challenge — i.e. it can't be replayed.
+     *
+     * `attestationChain` is empty when attestation is not supported on the device (very old
+     * KeyMaster) or fails for any reason — enrollment continues without attestation in that
+     * case (confidence_ceiling = medium).
+     */
+    data class KeyGenerationResult(
+        val publicKey: PublicKey,
+        val publicKeyBase64: String,
+        val strongBoxBacked: Boolean,
+        val attestationChain: List<String>,
+    )
+
+    /**
      * Generates a new EC P-256 keypair in the Android Keystore.
      *
      * Attempts StrongBox first; falls back to TEE silently.
      *
-     * @return Triple of (public key, base64-encoded uncompressed public key, isStrongBoxBacked)
+     * @param attestationChallenge bytes the Keystore embeds in the attestation extension of
+     *   the leaf cert. The server compares this against the value it expects (the enrollment
+     *   idempotency key) to defeat replay. Pass null to skip attestation.
      */
-    fun generateKeyPair(): Triple<PublicKey, String, Boolean> {
+    fun generateKeyPair(attestationChallenge: ByteArray? = null): KeyGenerationResult {
         val canUseStrongBox = context.packageManager
             .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
 
         if (canUseStrongBox) {
             try {
-                val keyPair = generateWith(strongBox = true)
-                val publicKeyBase64 = encodePublicKey(keyPair.public)
-                return Triple(keyPair.public, publicKeyBase64, true)
+                val keyPair = generateWith(strongBox = true, attestationChallenge = attestationChallenge)
+                return KeyGenerationResult(
+                    publicKey = keyPair.public,
+                    publicKeyBase64 = encodePublicKey(keyPair.public),
+                    strongBoxBacked = true,
+                    attestationChain = readAttestationChain(),
+                )
             } catch (e: StrongBoxUnavailableException) {
                 VouchflowLogger.warn("[VouchflowSDK] StrongBox unavailable — falling back to TEE-backed key.")
             }
         }
 
-        val keyPair = generateWith(strongBox = false)
-        val publicKeyBase64 = encodePublicKey(keyPair.public)
-        return Triple(keyPair.public, publicKeyBase64, false)
+        val keyPair = generateWith(strongBox = false, attestationChallenge = attestationChallenge)
+        return KeyGenerationResult(
+            publicKey = keyPair.public,
+            publicKeyBase64 = encodePublicKey(keyPair.public),
+            strongBoxBacked = false,
+            attestationChain = readAttestationChain(),
+        )
     }
 
-    private fun generateWith(strongBox: Boolean): KeyPair {
+    private fun generateWith(strongBox: Boolean, attestationChallenge: ByteArray?): KeyPair {
         val builder = KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_SIGN)
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
@@ -88,12 +118,35 @@ internal class KeystoreKeyManager(private val context: Context) {
                 if (strongBox) {
                     setIsStrongBoxBacked(true)
                 }
+                if (attestationChallenge != null) {
+                    setAttestationChallenge(attestationChallenge)
+                }
             }
             .build()
 
         val generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, KEYSTORE_PROVIDER)
         generator.initialize(builder)
         return generator.generateKeyPair()
+    }
+
+    /**
+     * Returns the certificate chain installed on the just-generated key, base64-DER encoded,
+     * leaf-first. The chain is rooted in the Google Hardware Attestation Root CA when the
+     * device supports key attestation; on devices without attestation support it consists
+     * of a single self-signed cert and the server will treat the device as un-attested.
+     *
+     * Returns an empty list on any failure (unsupported KeyMaster, key missing, etc.) — the
+     * caller treats that as "no attestation available."
+     */
+    private fun readAttestationChain(): List<String> {
+        return try {
+            val ks = java.security.KeyStore.getInstance(KEYSTORE_PROVIDER).also { it.load(null) }
+            val chain = ks.getCertificateChain(KEY_ALIAS) ?: return emptyList()
+            chain.map { Base64.encodeToString(it.encoded, Base64.NO_WRAP) }
+        } catch (e: Exception) {
+            VouchflowLogger.warn("[VouchflowSDK] Failed to read Keystore attestation chain: ${e.message}")
+            emptyList()
+        }
     }
 
     /**

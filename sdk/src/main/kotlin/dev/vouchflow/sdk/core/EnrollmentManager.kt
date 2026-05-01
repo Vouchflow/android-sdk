@@ -4,7 +4,6 @@ import android.content.Context
 import dev.vouchflow.sdk.VouchflowConfig
 import dev.vouchflow.sdk.VouchflowError
 import dev.vouchflow.sdk.crypto.KeystoreKeyManager
-import dev.vouchflow.sdk.crypto.PlayIntegrityProvider
 import dev.vouchflow.sdk.internal.VouchflowLogger
 import dev.vouchflow.sdk.network.VouchflowAPIClient
 import dev.vouchflow.sdk.network.models.EnrollRequest
@@ -121,21 +120,30 @@ internal class EnrollmentManager(
     private suspend fun performEnrollment(reason: String, existingDeviceToken: String?) {
         val idempotencyKey = "ik_${UUID.randomUUID().toString().lowercase()}"
 
-        // Step 1: Generate keypair in Keystore.
-        val (_, publicKeyBase64, strongboxBacked) = try {
-            keystoreKeyManager.generateKeyPair()
+        // Step 1: Generate keypair in Keystore. The idempotency key is passed as
+        // the attestation challenge so the server can verify the chain wasn't
+        // generated for some other transaction.
+        val keyResult = try {
+            keystoreKeyManager.generateKeyPair(
+                attestationChallenge = idempotencyKey.toByteArray(Charsets.UTF_8),
+            )
         } catch (e: Exception) {
             throw VouchflowError.EnrollmentFailed(e)
         }
+        val publicKeyBase64 = keyResult.publicKeyBase64
+        val strongboxBacked = keyResult.strongBoxBacked
 
         // Step 2: Write pending placeholder BEFORE network call (crash / kill safety).
         val placeholder = "pending_dvt_$idempotencyKey"
         store.writePendingToken(placeholder)
 
-        // Step 3: Obtain Play Integrity token (non-fatal on failure).
-        val integrityToken = PlayIntegrityProvider.attest(context, idempotencyKey)
-        val attestationPayload = integrityToken?.let {
-            EnrollRequest.AttestationPayload(token = it)
+        // Step 3: Build attestation payload from the Keystore Attestation cert
+        // chain. Empty chain (very old KeyMaster, attestation unsupported) →
+        // null payload, server falls back to confidence_ceiling=medium.
+        val attestationPayload = if (keyResult.attestationChain.isNotEmpty()) {
+            EnrollRequest.AttestationPayload(certChain = keyResult.attestationChain)
+        } else {
+            null
         }
 
         // Step 4: POST /v1/enroll.
@@ -205,10 +213,15 @@ internal class EnrollmentManager(
             return
         }
 
-        val integrityToken = PlayIntegrityProvider.attest(context, idempotencyKey)
-        val attestationPayload = integrityToken?.let {
-            EnrollRequest.AttestationPayload(token = it)
-        }
+        // Retry path: the original key was generated with an attestation
+        // challenge tied to a *previous* idempotency key. We can't re-derive
+        // the chain bound to this new attempt's idempotency key without
+        // regenerating the key, which would discard server-recognized state.
+        // Skip attestation on retry; the server treats this as un-attested
+        // (confidence_ceiling=medium) for this enrollment, which matches the
+        // reinstall semantics — the device proves itself via subsequent verify
+        // signatures, not the attestation chain.
+        val attestationPayload: EnrollRequest.AttestationPayload? = null
 
         val strongboxBacked = keystoreKeyManager.isStrongBoxBacked()
 
