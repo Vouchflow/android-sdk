@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import dev.vouchflow.sdk.core.EnrollmentManager
 import dev.vouchflow.sdk.core.FallbackManager
+import dev.vouchflow.sdk.core.SignPayloadManager
 import dev.vouchflow.sdk.core.VerificationManager
 import dev.vouchflow.sdk.crypto.ChallengeProcessor
 import dev.vouchflow.sdk.crypto.KeystoreKeyManager
@@ -144,7 +145,15 @@ object Vouchflow {
             apiClient = apiClient
         )
 
-        return VouchflowInstance(verificationManager, fallbackManager, store)
+        val signPayloadManager = SignPayloadManager(
+            config = config,
+            store = store,
+            keystoreKeyManager = keystoreKeyManager,
+            enrollmentManager = enrollmentManager,
+            apiClient = apiClient,
+        )
+
+        return VouchflowInstance(verificationManager, fallbackManager, signPayloadManager, store)
     }
 }
 
@@ -156,6 +165,7 @@ object Vouchflow {
 class VouchflowInstance internal constructor(
     private val verificationManager: VerificationManager,
     private val fallbackManager: FallbackManager,
+    private val signPayloadManager: SignPayloadManager,
     private val store: dev.vouchflow.sdk.storage.AccountManagerStore
 ) {
 
@@ -228,6 +238,36 @@ class VouchflowInstance internal constructor(
         sessionId: String,
         otp: String
     ): FallbackVerificationResult = fallbackManager.submitOtp(sessionId, otp)
+
+    // ── signPayload ───────────────────────────────────────────────────────────
+
+    /**
+     * Cryptographically binds a biometric confirmation to specific payload content.
+     * Use for high-assurance authorization — mandate signing, transaction approval,
+     * key release — where the proof must include *what* was authorized, not just
+     * that a user confirmation occurred.
+     *
+     * The returned [SignedBundle.assertion] is a JWS signed by Vouchflow. Your
+     * backend verifies it against `https://api.vouchflow.dev/v1/.well-known/jwks.json`
+     * with any JWT library — no platform cryptography on the server side.
+     *
+     * @param activity The currently-visible [FragmentActivity]. [BiometricPrompt] is
+     *   bound to this Activity — do not cache it.
+     * @param payload Any JSON-serializable value (Map / List / primitives). Canonicalized
+     *   via RFC 8785 JCS before signing.
+     * @param context A short audit string (`'mandate_signing'`, `'transfer'`, etc.).
+     * @param minimumConfidence Defaults to [Confidence.HIGH]. If the device's
+     *   enrollment ceiling cannot meet it, [VouchflowError.MinimumConfidenceUnmet]
+     *   is thrown.
+     * @return A [SignedBundle] to ship to your backend.
+     * @throws VouchflowError
+     */
+    suspend fun signPayload(
+        activity: FragmentActivity,
+        payload: Any?,
+        context: String,
+        minimumConfidence: Confidence = Confidence.HIGH,
+    ): SignedBundle = signPayloadManager.signPayload(activity, payload, context, minimumConfidence)
 
     // ── Reset ─────────────────────────────────────────────────────────────────
 

@@ -53,6 +53,14 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
     fun completeVerification(sessionId: String, request: CompleteVerificationRequest): CompleteVerificationResponse =
         perform("POST", "/v1/verify/$sessionId/complete", request)
 
+    // ── Sign ──────────────────────────────────────────────────────────────────
+
+    fun initiateSign(request: SignInitiateRequest): SignInitiateResponse =
+        perform("POST", "/v1/sign", request)
+
+    fun completeSign(sessionId: String, request: SignCompleteRequest): SignCompleteResponse =
+        perform("POST", "/v1/sign/$sessionId/complete", request)
+
     // ── Fallback ──────────────────────────────────────────────────────────────
 
     fun initiateFallback(sessionId: String, request: FallbackRequest): FallbackResponse =

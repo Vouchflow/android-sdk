@@ -121,3 +121,35 @@ data class FallbackResult(
     /** When the OTP expires. 5-minute window from initiation. */
     val expiresAt: Instant
 )
+
+// ── signPayload ───────────────────────────────────────────────────────────────
+
+/**
+ * Result of a successful [Vouchflow.signPayload] call.
+ *
+ * The customer's backend verifies [assertion] against Vouchflow's published
+ * JWKs at `https://api.vouchflow.dev/v1/.well-known/jwks.json` — no
+ * platform cryptography required server-side.
+ */
+data class SignedBundle(
+    /** Canonicalized JSON string (RFC 8785 JCS) that was signed. Customer
+     *  backends recompute SHA-256 of this and compare to `payload_sha256`
+     *  in the JWS claims. */
+    val payload: String,
+    /** The context string passed at call time, echoed back for audit. */
+    val context: String,
+    /** Vouchflow-signed JWS (compact). The primary thing customers verify. */
+    val assertion: String,
+    /** Stable per-device, per-customer identifier (`sdv_…`). */
+    val signingDeviceId: String,
+    /** Same opaque token as [Vouchflow.verify] — pass to your backend for
+     *  reputation queries. */
+    val deviceToken: String,
+    /** Achieved confidence. May be lower than the device's enrollment
+     *  ceiling — see RFC §5. */
+    val confidence: Confidence,
+    /** Server-side issuance time. */
+    val signedAt: Instant,
+    /** Always `"android"` for this SDK. Mirrored from the JWS `platform` claim. */
+    val platform: String,
+)

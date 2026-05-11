@@ -82,6 +82,14 @@ sealed class VouchflowError : Exception() {
      */
     object MinimumConfidenceUnmet : VouchflowError()
 
+    // ── signPayload ───────────────────────────────────────────────────────────
+
+    /**
+     * The payload passed to [Vouchflow.signPayload] could not be canonicalized
+     * as JSON (contains non-JSON types, NaN/Infinity, etc.).
+     */
+    data class CanonicalizationFailed(val canonicalizationCause: Throwable? = null) : VouchflowError()
+
     // ── Network ───────────────────────────────────────────────────────────────
 
     /** A network connection could not be established. */
