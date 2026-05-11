@@ -1,7 +1,7 @@
 package dev.vouchflow.sdk.crypto
 
-import org.json.JSONArray
-import org.json.JSONObject
+import com.google.gson.JsonElement
+import com.google.gson.JsonParser
 import java.lang.NumberFormatException
 
 /**
@@ -26,26 +26,16 @@ object JCSCanonicalizer {
     fun canonicalize(value: Any?): String = serialize(value)
 
     /** Canonicalize a pre-parsed JSON string. Handy for callers that built
-     *  the payload via Gson / Moshi / JSONObject. */
+     *  the payload via Gson / Moshi / JSONObject.
+     *
+     *  Parsed via Gson rather than org.json so that this code path is callable
+     *  from plain-JVM unit tests (Android's org.json is a stub in the mockable
+     *  android.jar and throws "Method not mocked" on JSONObject construction). */
     @JvmStatic
     fun canonicalizeJson(json: String): String {
         val trimmed = json.trim()
-        return when {
-            trimmed.startsWith("{") -> serialize(jsonObjectToMap(JSONObject(trimmed)))
-            trimmed.startsWith("[") -> serialize(jsonArrayToList(JSONArray(trimmed)))
-            trimmed == "null" -> "null"
-            trimmed == "true" -> "true"
-            trimmed == "false" -> "false"
-            trimmed.startsWith("\"") -> serialize(trimmed.substring(1, trimmed.length - 1))
-            else -> {
-                // Number — try Long, then Double
-                try {
-                    serialize(trimmed.toLong())
-                } catch (_: NumberFormatException) {
-                    serialize(trimmed.toDouble())
-                }
-            }
-        }
+        val parsed = JsonParser.parseString(trimmed)
+        return serialize(jsonElementToAny(parsed))
     }
 
     // MARK: - Internals
@@ -82,9 +72,38 @@ object JCSCanonicalizer {
     }
 
     private fun serializeString(s: String): String {
-        // Use JSONObject's escape rules — handles \", \\, control chars, and
-        // surrogate pairs the same way JSON.stringify does for normal Unicode.
-        return JSONObject.quote(s)
+        // Hand-rolled escape per JCS §3.2.2.2 / JSON spec. We avoid
+        // org.json.JSONObject.quote because Android's org.json is a stub in
+        // the mockable android.jar used for unit tests — calling it throws
+        // "Method not mocked". The escape table here matches what
+        // JSON.stringify (and JSONObject.quote on-device) produce for the
+        // BMP code-point inputs customer payloads exercise.
+        val sb = StringBuilder(s.length + 2)
+        sb.append('"')
+        for (i in s.indices) {
+            val c = s[i]
+            when (c) {
+                '"' -> sb.append("\\\"")
+                '\\' -> sb.append("\\\\")
+                '\b' -> sb.append("\\b")
+                '\u000c' -> sb.append("\\f")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> {
+                    if (c.code < 0x20) {
+                        sb.append("\\u")
+                        val hex = Integer.toHexString(c.code)
+                        for (j in 0 until 4 - hex.length) sb.append('0')
+                        sb.append(hex)
+                    } else {
+                        sb.append(c)
+                    }
+                }
+            }
+        }
+        sb.append('"')
+        return sb.toString()
     }
 
     private fun serializeArray(arr: List<*>): String {
@@ -106,26 +125,41 @@ object JCSCanonicalizer {
      *  Char (UTF-16 code unit), matching JCS §3.2.3. */
     private fun compareUtf16(a: String, b: String): Int = a.compareTo(b)
 
-    private fun jsonObjectToMap(obj: JSONObject): Map<String, Any?> {
-        val out = HashMap<String, Any?>(obj.length())
-        val keys = obj.keys()
-        while (keys.hasNext()) {
-            val k = keys.next()
-            out[k] = jsonValueToAny(obj.opt(k))
+    private fun jsonElementToAny(el: JsonElement): Any? = when {
+        el.isJsonNull -> null
+        el.isJsonObject -> {
+            val o = el.asJsonObject
+            val out = LinkedHashMap<String, Any?>(o.size())
+            for ((k, v) in o.entrySet()) out[k] = jsonElementToAny(v)
+            out
         }
-        return out
-    }
-
-    private fun jsonArrayToList(arr: JSONArray): List<Any?> {
-        val out = ArrayList<Any?>(arr.length())
-        for (i in 0 until arr.length()) out.add(jsonValueToAny(arr.opt(i)))
-        return out
-    }
-
-    private fun jsonValueToAny(v: Any?): Any? = when (v) {
-        JSONObject.NULL, null -> null
-        is JSONObject -> jsonObjectToMap(v)
-        is JSONArray -> jsonArrayToList(v)
-        else -> v
+        el.isJsonArray -> {
+            val a = el.asJsonArray
+            val out = ArrayList<Any?>(a.size())
+            for (v in a) out.add(jsonElementToAny(v))
+            out
+        }
+        el.isJsonPrimitive -> {
+            val p = el.asJsonPrimitive
+            when {
+                p.isBoolean -> p.asBoolean
+                p.isString -> p.asString
+                p.isNumber -> {
+                    // Preserve integer vs. fractional shape for serializeNumber.
+                    val asString = p.asString
+                    try {
+                        if (asString.contains('.') || asString.contains('e') || asString.contains('E')) {
+                            p.asDouble
+                        } else {
+                            asString.toLong()
+                        }
+                    } catch (_: NumberFormatException) {
+                        p.asDouble
+                    }
+                }
+                else -> null
+            }
+        }
+        else -> null
     }
 }

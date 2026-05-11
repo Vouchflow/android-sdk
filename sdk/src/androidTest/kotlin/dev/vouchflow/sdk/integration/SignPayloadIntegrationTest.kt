@@ -46,13 +46,13 @@ class SignPayloadIntegrationTest {
 
     @Before
     fun setUp() {
-        StagingTestConfig.configure(context)
-        StagingTestConfig.reset(context)
+        StagingTestConfig.configure()
+        StagingTestConfig.reset()
     }
 
     @After
     fun tearDown() {
-        StagingTestConfig.reset(context)
+        StagingTestConfig.reset()
     }
 
     /**
