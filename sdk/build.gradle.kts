@@ -56,6 +56,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
+    // Encrypted storage — fallback token store (EncryptedPrefsTokenStore) used when
+    // AccountManager is unavailable (fresh-install race, work profiles) or disabled by config.
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Unit tests
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")

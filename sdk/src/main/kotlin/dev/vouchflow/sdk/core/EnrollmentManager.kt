@@ -7,7 +7,7 @@ import dev.vouchflow.sdk.crypto.KeystoreKeyManager
 import dev.vouchflow.sdk.internal.VouchflowLogger
 import dev.vouchflow.sdk.network.VouchflowAPIClient
 import dev.vouchflow.sdk.network.models.EnrollRequest
-import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.TokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,7 +41,7 @@ import java.util.UUID
 internal class EnrollmentManager(
     private val config: VouchflowConfig,
     private val context: Context,
-    private val store: AccountManagerStore,
+    private val store: TokenStore,
     private val keystoreKeyManager: KeystoreKeyManager,
     private val apiClient: VouchflowAPIClient
 ) {

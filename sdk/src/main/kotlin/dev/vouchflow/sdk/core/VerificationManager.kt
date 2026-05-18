@@ -13,7 +13,7 @@ import dev.vouchflow.sdk.network.VouchflowAPIClient
 import dev.vouchflow.sdk.network.models.CompleteVerificationRequest
 import dev.vouchflow.sdk.network.models.VerifyRequest
 import dev.vouchflow.sdk.network.models.VerifyResponse
-import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.TokenStore
 import dev.vouchflow.sdk.storage.SessionCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -50,7 +50,7 @@ import kotlin.coroutines.resumeWithException
  */
 internal class VerificationManager(
     private val config: VouchflowConfig,
-    private val store: AccountManagerStore,
+    private val store: TokenStore,
     private val keystoreKeyManager: KeystoreKeyManager,
     private val challengeProcessor: ChallengeProcessor,
     private val sessionCache: SessionCache,

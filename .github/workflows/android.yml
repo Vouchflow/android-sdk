@@ -66,6 +66,8 @@ jobs:
       # Pass 1 — no auth (before PIN is set):
       #   noAuth_verifyThrowsError runs; verify() must throw EnrollmentFailed or
       #   BiometricUnavailable on a device with no credential configured.
+      #   ConfigureInfallibilityTest also runs here — issue #1 regression coverage;
+      #   configure()/storage infallibility needs no device credential.
       #
       # Pass 2 — device credential (after PIN "1234" is set):
       #   EnrollmentIntegrationTest and passcodeEnrolled_enrollAndVerifySucceeds run.
@@ -81,7 +83,7 @@ jobs:
           disable-animations: true
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-            ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#noAuth_verifyThrowsError" --stacktrace
+            ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest#noAuth_verifyThrowsError,dev.vouchflow.sdk.integration.ConfigureInfallibilityTest" --stacktrace
             adb shell locksettings set-pin 1234
             ./gradlew :sdk:connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.vouchflow.sdk.integration.EnrollmentIntegrationTest,dev.vouchflow.sdk.integration.PasskeyTypeIntegrationTest" --stacktrace
 

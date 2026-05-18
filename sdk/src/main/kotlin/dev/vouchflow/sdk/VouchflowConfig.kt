@@ -36,13 +36,21 @@ enum class VouchflowEnvironment(val baseUrl: String, val hostname: String) {
  *   intermediate as [leafCertificatePin]. Update both when Let's Encrypt rotates to a new
  *   intermediate CA. ISRG Root X1 is NOT used because Fly.io's TLS handshake does not include
  *   the root certificate, so it cannot be matched by OkHttp's CertificatePinner.
+ * @param accountManagerStorage When `true` (default), the device token is persisted at the OS
+ *   account level via [android.accounts.AccountManager], so it survives app reinstall on most
+ *   devices. When `false`, the SDK uses only encrypted in-app storage — the token does not
+ *   survive uninstall, and a reinstall presents to the server as a fresh enrollment.
+ *   Set `false` to disable OS-level account storage entirely (e.g. for managed-device fleets
+ *   that restrict account modification). Note: even when `true`, the SDK silently falls back
+ *   to encrypted in-app storage if AccountManager is unavailable on the device or profile.
  */
 data class VouchflowConfig(
     val apiKey: String,
     val environment: VouchflowEnvironment = VouchflowEnvironment.PRODUCTION,
     // E7 intermediate CA SubjectPublicKeyInfo SHA-256. Valid while Let's Encrypt issues from E7.
     val leafCertificatePin: String = "y7xVm0TVJNahMr2sZydE2jQH8SquXV9yLF9seROHHHU=",
-    val intermediateCertificatePin: String = "y7xVm0TVJNahMr2sZydE2jQH8SquXV9yLF9seROHHHU="
+    val intermediateCertificatePin: String = "y7xVm0TVJNahMr2sZydE2jQH8SquXV9yLF9seROHHHU=",
+    val accountManagerStorage: Boolean = true
 ) {
     internal val hasTodoPlaceholderPins: Boolean
         get() = leafCertificatePin.startsWith("TODO") || intermediateCertificatePin.startsWith("TODO")
