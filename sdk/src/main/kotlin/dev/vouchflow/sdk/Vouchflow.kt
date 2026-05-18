@@ -11,7 +11,11 @@ import dev.vouchflow.sdk.crypto.KeystoreKeyManager
 import dev.vouchflow.sdk.internal.VouchflowLogger
 import dev.vouchflow.sdk.network.VouchflowAPIClient
 import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.DeferredTokenStore
+import dev.vouchflow.sdk.storage.EncryptedPrefsTokenStore
 import dev.vouchflow.sdk.storage.SessionCache
+import dev.vouchflow.sdk.storage.TokenStore
+import dev.vouchflow.sdk.storage.TokenStoreFactory
 
 /**
  * The main entry point for the Vouchflow SDK.
@@ -108,15 +112,23 @@ object Vouchflow {
     fun reset() {
         val ctx = applicationContext ?: return
         KeystoreKeyManager(ctx).deleteKey()
-        val store = AccountManagerStore(ctx)
-        store.deleteDeviceToken()
-        store.deletePendingToken()
+        // Clear tokens from both possible backends — the active store depends on device
+        // capability and config, and both implementations honor the no-throw contract.
+        for (store in listOf(AccountManagerStore(ctx), EncryptedPrefsTokenStore(ctx))) {
+            store.deleteDeviceToken()
+            store.deletePendingToken()
+        }
         _instance = null
         VouchflowLogger.debug("[VouchflowSDK] Reset complete — local enrollment data cleared.")
     }
 
     private fun buildInstance(context: Context, config: VouchflowConfig): VouchflowInstance {
-        val store = AccountManagerStore(context)
+        // Deferred: store selection probes AccountManager via Binder IPC, which must not run
+        // on the synchronous configure() / Application.onCreate() path. Resolved on first
+        // access from a background dispatcher. See DeferredTokenStore.
+        val store: TokenStore = DeferredTokenStore {
+            TokenStoreFactory.create(context, config.accountManagerStorage)
+        }
         val keystoreKeyManager = KeystoreKeyManager(context)
         val challengeProcessor = ChallengeProcessor()
         val sessionCache = SessionCache()
@@ -166,7 +178,7 @@ class VouchflowInstance internal constructor(
     private val verificationManager: VerificationManager,
     private val fallbackManager: FallbackManager,
     private val signPayloadManager: SignPayloadManager,
-    private val store: dev.vouchflow.sdk.storage.AccountManagerStore
+    private val store: TokenStore
 ) {
 
     /**

@@ -16,7 +16,7 @@ import dev.vouchflow.sdk.network.VouchflowAPIClient
 import dev.vouchflow.sdk.network.models.SignCompleteRequest
 import dev.vouchflow.sdk.network.models.SignInitiateRequest
 import dev.vouchflow.sdk.network.models.SignInitiateResponse
-import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.TokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -43,7 +43,7 @@ import kotlin.coroutines.resumeWithException
  */
 internal class SignPayloadManager(
     private val config: VouchflowConfig,
-    private val store: AccountManagerStore,
+    private val store: TokenStore,
     private val keystoreKeyManager: KeystoreKeyManager,
     private val enrollmentManager: EnrollmentManager,
     private val apiClient: VouchflowAPIClient,

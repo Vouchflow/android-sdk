@@ -8,7 +8,7 @@ import dev.vouchflow.sdk.VouchflowError
 import dev.vouchflow.sdk.network.VouchflowAPIClient
 import dev.vouchflow.sdk.network.models.FallbackCompleteRequest
 import dev.vouchflow.sdk.network.models.FallbackRequest
-import dev.vouchflow.sdk.storage.AccountManagerStore
+import dev.vouchflow.sdk.storage.TokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
@@ -22,7 +22,7 @@ import java.time.Instant
  * The developer decides whether to offer fallback — the SDK never auto-triggers it.
  */
 internal class FallbackManager(
-    private val store: AccountManagerStore,
+    private val store: TokenStore,
     private val apiClient: VouchflowAPIClient
 ) {
 

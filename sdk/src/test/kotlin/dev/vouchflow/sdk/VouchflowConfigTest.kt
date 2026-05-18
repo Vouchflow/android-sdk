@@ -73,6 +73,28 @@ class VouchflowConfigTest {
         )
     }
 
+    @Test
+    fun `accountManagerStorage defaults to true`() {
+        val config = VouchflowConfig(apiKey = "vsk_live_test")
+        assertTrue(
+            "OS-level account storage must be enabled by default",
+            config.accountManagerStorage
+        )
+    }
+
+    @Test
+    fun `accountManagerStorage can be disabled`() {
+        val config = VouchflowConfig(apiKey = "vsk_live_test", accountManagerStorage = false)
+        assertFalse(config.accountManagerStorage)
+    }
+
+    @Test
+    fun `configs differing only in accountManagerStorage are not equal`() {
+        val withAm = VouchflowConfig(apiKey = "vsk_live_abc", accountManagerStorage = true)
+        val withoutAm = VouchflowConfig(apiKey = "vsk_live_abc", accountManagerStorage = false)
+        assertTrue(withAm != withoutAm)
+    }
+
     // ── Data class equality ───────────────────────────────────────────────────
 
     @Test
