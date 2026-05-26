@@ -132,8 +132,9 @@ class ApiErrorMappingTest {
             retryChallenge = null
         )
         assertTrue(error is VouchflowError.ServerError)
-        assertEquals(422, (error as VouchflowError.ServerError).statusCode)
-        assertEquals("invalid_device", (error as VouchflowError.ServerError).code)
+        val serverError = error as VouchflowError.ServerError
+        assertEquals(422, serverError.statusCode)
+        assertEquals("invalid_device", serverError.code)
     }
 
     @Test
@@ -168,10 +169,10 @@ class ApiErrorMappingTest {
     }
 
     @Test
-    fun `SHA-256 of user@example dot com equals known digest`() {
-        val input = "user@example.com"
+    fun `SHA-256 email hash normalizes whitespace and case`() {
+        val input = "  User@Example.COM  "
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val hash = digest.digest(input.toByteArray(Charsets.UTF_8))
+        val hash = digest.digest(input.trim().lowercase().toByteArray(Charsets.UTF_8))
         val hex = hash.joinToString("") { "%02x".format(it) }
         assertEquals(
             "b4c9a289323b21a01c3e940f150eb9b8c542587f1abfd8f0e1cc1ffc5e475514",

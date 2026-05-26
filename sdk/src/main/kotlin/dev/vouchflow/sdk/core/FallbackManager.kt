@@ -91,8 +91,9 @@ internal class FallbackManager(
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun sha256Hex(input: String): String {
+        val normalized = input.trim().lowercase()
         val digest = MessageDigest.getInstance("SHA-256")
-        val hash = digest.digest(input.toByteArray(Charsets.UTF_8))
+        val hash = digest.digest(normalized.toByteArray(Charsets.UTF_8))
         return hash.joinToString("") { "%02x".format(it) }
     }
 }

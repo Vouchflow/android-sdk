@@ -89,9 +89,8 @@ introduces the divergence.
 5. **Close the loop.** The sibling-repo issue stays open until its SDK ships the counterpart;
    only then may the version numbers re-converge.
 
-## 7. Current parity state (2026-05-18)
+## 7. Current parity state (2026-05-26)
 
-Both SDKs at **2.1.1**. Known open divergences: none beyond §5. Last reconciliation:
-the issue #1 storage-resilience work — Android (`accountManagerStorage`, `TokenStore`,
-infallible `configure()`) and iOS (`keychainStorage`, `KeychainBackend`, self-healing
-Keychain fallback) — shipped to both.
+Both SDKs at **2.1.2**. Known open divergences: none beyond §5. Last reconciliation:
+fallback email normalization and `signPayload` session-error propagation shipped to both;
+Android also carries the platform-only AGP/Gradle update.

@@ -116,7 +116,7 @@ internal class SignPayloadManager(
         val cryptoObject = withContext(Dispatchers.IO) { keystoreKeyManager.createCryptoObject() }
             ?: throw VouchflowError.EnrollmentFailed()
 
-        val authResult = authenticateBiometric(activity, cryptoObject)
+        val authResult = authenticateBiometric(activity, cryptoObject, init.sessionId)
         val signature = authResult.signature ?: throw VouchflowError.BiometricFailed(init.sessionId)
         signature.update(signingInput)
         val signed = signature.sign()
@@ -161,6 +161,7 @@ internal class SignPayloadManager(
     private suspend fun authenticateBiometric(
         activity: FragmentActivity,
         cryptoObject: BiometricPrompt.CryptoObject,
+        sessionId: String,
     ): BiometricAuthResult = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { continuation ->
             val executor = ContextCompat.getMainExecutor(activity)
@@ -184,13 +185,13 @@ internal class SignPayloadManager(
                             BiometricPrompt.ERROR_USER_CANCELED,
                             BiometricPrompt.ERROR_NEGATIVE_BUTTON,
                             BiometricPrompt.ERROR_CANCELED ->
-                                VouchflowError.BiometricCancelled("")
+                                VouchflowError.BiometricCancelled(sessionId)
                             BiometricPrompt.ERROR_HW_UNAVAILABLE,
                             BiometricPrompt.ERROR_HW_NOT_PRESENT,
                             BiometricPrompt.ERROR_NO_BIOMETRICS,
                             BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL ->
                                 VouchflowError.BiometricUnavailable
-                            else -> VouchflowError.BiometricFailed("")
+                            else -> VouchflowError.BiometricFailed(sessionId)
                         }
                         continuation.resumeWithException(err)
                     }
@@ -211,8 +212,12 @@ internal class SignPayloadManager(
             } catch (e: Exception) {
                 VouchflowLogger.warn("[VouchflowSDK] BiometricPrompt.authenticate threw: $e")
                 if (continuation.isActive) {
-                    continuation.resumeWithException(VouchflowError.BiometricFailed(""))
+                    continuation.resumeWithException(VouchflowError.BiometricFailed(sessionId))
                 }
+            }
+
+            continuation.invokeOnCancellation {
+                prompt.cancelAuthentication()
             }
         }
     }
