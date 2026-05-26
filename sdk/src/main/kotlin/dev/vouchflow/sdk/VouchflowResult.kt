@@ -128,7 +128,7 @@ data class FallbackResult(
  * Result of a successful [Vouchflow.signPayload] call.
  *
  * The customer's backend verifies [assertion] against Vouchflow's published
- * JWKs at `https://api.vouchflow.dev/v1/.well-known/jwks.json` — no
+ * JWKs at `https://api.vouchflow.dev/.well-known/jwks.json` — no
  * platform cryptography required server-side.
  */
 data class SignedBundle(

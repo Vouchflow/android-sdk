@@ -1,19 +1,19 @@
 # Keep Vouchflow public API classes — required for reflection in host apps that use R8 full mode.
--keep class com.vouchflow.sdk.Vouchflow { *; }
--keep class com.vouchflow.sdk.VouchflowInstance { *; }
--keep class com.vouchflow.sdk.VouchflowConfig { *; }
--keep class com.vouchflow.sdk.VouchflowError { *; }
--keep class com.vouchflow.sdk.VouchflowResult { *; }
--keep class com.vouchflow.sdk.FallbackResult { *; }
--keep class com.vouchflow.sdk.FallbackVerificationResult { *; }
--keep class com.vouchflow.sdk.VouchflowSignals { *; }
--keep class com.vouchflow.sdk.FallbackSignals { *; }
--keep enum com.vouchflow.sdk.** { *; }
+-keep class dev.vouchflow.sdk.Vouchflow { *; }
+-keep class dev.vouchflow.sdk.VouchflowInstance { *; }
+-keep class dev.vouchflow.sdk.VouchflowConfig { *; }
+-keep class dev.vouchflow.sdk.VouchflowError { *; }
+-keep class dev.vouchflow.sdk.VouchflowResult { *; }
+-keep class dev.vouchflow.sdk.FallbackResult { *; }
+-keep class dev.vouchflow.sdk.FallbackVerificationResult { *; }
+-keep class dev.vouchflow.sdk.VouchflowSignals { *; }
+-keep class dev.vouchflow.sdk.FallbackSignals { *; }
+-keep enum dev.vouchflow.sdk.** { *; }
 
 # Keep Gson model classes — field names must survive shrinking for JSON deserialization.
--keep class com.vouchflow.sdk.network.models.** { *; }
--keepclassmembers class com.vouchflow.sdk.network.models.** { *; }
+-keep class dev.vouchflow.sdk.network.models.** { *; }
+-keepclassmembers class dev.vouchflow.sdk.network.models.** { *; }
 
 # Keep AccountManager authenticator service — declared in merged manifest.
--keep class com.vouchflow.sdk.internal.VouchflowAuthenticatorService { *; }
--keep class com.vouchflow.sdk.internal.VouchflowInitProvider { *; }
+-keep class dev.vouchflow.sdk.internal.VouchflowAuthenticatorService { *; }
+-keep class dev.vouchflow.sdk.internal.VouchflowInitProvider { *; }

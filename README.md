@@ -143,7 +143,6 @@ lifecycleScope.launch {
         // User tapped Cancel on the biometric prompt.
         // Show a retry button. Optionally offer email fallback:
         val fallback = Vouchflow.shared.requestFallback(
-            sessionId = e.sessionId,
             email = currentUserEmail,
             reason = FallbackReason.BIOMETRIC_CANCELLED
         )
@@ -153,7 +152,6 @@ lifecycleScope.launch {
         // Biometric failed (wrong face/finger, lockout, hardware error).
         // Offer fallback or hard-fail depending on your policy.
         val fallback = Vouchflow.shared.requestFallback(
-            sessionId = e.sessionId,
             email = currentUserEmail,
             reason = FallbackReason.BIOMETRIC_FAILED
         )
@@ -186,11 +184,10 @@ When biometric verification fails or is unavailable, you can offer email OTP as 
 
 ### Step 1 — Initiate fallback
 
-Call `requestFallback` with the `sessionId` from the caught error and the user's email address.
+Call `requestFallback` after catching `BiometricFailed` or `BiometricCancelled`. The SDK keeps the active verification session internally, so you pass only the user's email address and the reason.
 
 ```kotlin
 val fallback = Vouchflow.shared.requestFallback(
-    sessionId = e.sessionId,   // from VouchflowError.BiometricFailed or .BiometricCancelled
     email = userEmail,
     reason = FallbackReason.BIOMETRIC_FAILED
 )
@@ -207,6 +204,23 @@ val result = Vouchflow.shared.submitFallbackOtp(
 )
 // result.verified   — Boolean
 // result.confidence — always Confidence.LOW for email fallback
+```
+
+## Payload signing
+
+Use `signPayload()` when the proof must include exactly what the user approved, such as a transfer, mandate, or high-risk account change. The SDK canonicalizes the payload with RFC 8785 JCS, presents the biometric prompt, and returns a Vouchflow-signed JWS that your backend verifies against `https://api.vouchflow.dev/.well-known/jwks.json`.
+
+```kotlin
+val signed = Vouchflow.shared.signPayload(
+    activity = this@MainActivity,
+    payload = mapOf("v" to 1, "id" to "mand_abc", "scope" to "send"),
+    context = "mandate_signing",
+    minimumConfidence = Confidence.HIGH // default
+)
+
+// signed.payload         — canonical JSON string the user approved
+// signed.assertion       — Vouchflow-signed JWS for your backend
+// signed.signingDeviceId — sdv_... stable credential identifier
 ```
 
 ### Fallback reasons

@@ -260,7 +260,7 @@ class VouchflowInstance internal constructor(
      * that a user confirmation occurred.
      *
      * The returned [SignedBundle.assertion] is a JWS signed by Vouchflow. Your
-     * backend verifies it against `https://api.vouchflow.dev/v1/.well-known/jwks.json`
+     * backend verifies it against `https://api.vouchflow.dev/.well-known/jwks.json`
      * with any JWT library — no platform cryptography on the server side.
      *
      * @param activity The currently-visible [FragmentActivity]. [BiometricPrompt] is

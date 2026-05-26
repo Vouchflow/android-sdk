@@ -45,16 +45,12 @@ sealed class VouchflowError : Exception() {
     /**
      * The user explicitly cancelled the biometric prompt.
      * Show a retry button. Call [Vouchflow.requestFallback] if the user opts into email fallback.
-     *
-     * @param sessionId Pass to [Vouchflow.requestFallback] to initiate email OTP for this session.
      */
     data class BiometricCancelled(val sessionId: String) : VouchflowError()
 
     /**
      * The biometric attempt failed (wrong face/finger, lockout, hardware error).
      * Do not auto-retry more than once. Offer fallback or hard-fail.
-     *
-     * @param sessionId Pass to [Vouchflow.requestFallback] to initiate email OTP for this session.
      */
     data class BiometricFailed(val sessionId: String) : VouchflowError()
 
