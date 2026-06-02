@@ -8,7 +8,7 @@ package dev.vouchflow.sdk
  */
 enum class VouchflowEnvironment(val baseUrl: String, val hostname: String) {
     PRODUCTION("https://api.vouchflow.dev", "api.vouchflow.dev"),
-    SANDBOX("https://sandbox.api.vouchflow.dev", "sandbox.api.vouchflow.dev");
+    SANDBOX("https://api.vouchflow.dev", "api.vouchflow.dev");
 }
 
 /**

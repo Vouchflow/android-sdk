@@ -91,6 +91,6 @@ introduces the divergence.
 
 ## 7. Current parity state (2026-05-26)
 
-Both SDKs at **2.1.2**. Known open divergences: none beyond §5. Last reconciliation:
+Both SDKs at **2.1.3**. Known open divergences: none beyond §5. Last reconciliation:
 fallback email normalization and `signPayload` session-error propagation shipped to both;
 Android also carries the platform-only AGP/Gradle update.
