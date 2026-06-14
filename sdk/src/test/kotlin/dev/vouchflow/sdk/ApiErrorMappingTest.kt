@@ -41,10 +41,14 @@ class ApiErrorMappingTest {
             }
 
             else -> {
-                if (errorCode == "verification_impossible") {
-                    VouchflowError.MinimumConfidenceUnmet
-                } else {
-                    VouchflowError.ServerError(
+                when {
+                    errorCode == "verification_impossible" ->
+                        VouchflowError.MinimumConfidenceUnmet
+                    statusCode == 403 && errorCode == "device_not_owned" ->
+                        VouchflowError.DeviceClaimedElsewhere
+                    statusCode == 409 && errorCode == "public_key_already_registered" ->
+                        VouchflowError.PublicKeyAlreadyRegistered
+                    else -> VouchflowError.ServerError(
                         statusCode = statusCode,
                         code = errorCode,
                         serverMessage = null
@@ -121,6 +125,60 @@ class ApiErrorMappingTest {
                 error is VouchflowError.MinimumConfidenceUnmet
             )
         }
+    }
+
+    @Test
+    fun `403 with device_not_owned maps to DeviceClaimedElsewhere`() {
+        val error = mapStatusCode(
+            statusCode = 403,
+            errorCode = "device_not_owned",
+            retrySessionId = null,
+            retryChallenge = null
+        )
+        assertTrue(
+            "Expected DeviceClaimedElsewhere but got ${error::class.simpleName}",
+            error is VouchflowError.DeviceClaimedElsewhere
+        )
+    }
+
+    @Test
+    fun `403 with unrelated code stays a generic ServerError`() {
+        // Regression guard: only device_not_owned promotes to the typed case.
+        // A different 403 (e.g. insufficient_scope) must keep falling through.
+        val error = mapStatusCode(
+            statusCode = 403,
+            errorCode = "insufficient_scope",
+            retrySessionId = null,
+            retryChallenge = null
+        )
+        assertTrue(error is VouchflowError.ServerError)
+        assertEquals(403, (error as VouchflowError.ServerError).statusCode)
+    }
+
+    @Test
+    fun `409 with public_key_already_registered maps to PublicKeyAlreadyRegistered`() {
+        val error = mapStatusCode(
+            statusCode = 409,
+            errorCode = "public_key_already_registered",
+            retrySessionId = null,
+            retryChallenge = null
+        )
+        assertTrue(
+            "Expected PublicKeyAlreadyRegistered but got ${error::class.simpleName}",
+            error is VouchflowError.PublicKeyAlreadyRegistered
+        )
+    }
+
+    @Test
+    fun `409 with unrelated code stays a generic ServerError`() {
+        val error = mapStatusCode(
+            statusCode = 409,
+            errorCode = "app_archived",
+            retrySessionId = null,
+            retryChallenge = null
+        )
+        assertTrue(error is VouchflowError.ServerError)
+        assertEquals(409, (error as VouchflowError.ServerError).statusCode)
     }
 
     @Test

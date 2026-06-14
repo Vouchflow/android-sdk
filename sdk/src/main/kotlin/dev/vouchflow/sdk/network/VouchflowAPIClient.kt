@@ -160,6 +160,25 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
                         throw VouchflowError.MinimumConfidenceUnmet
                     }
 
+                    // device_not_owned (403): the on-device token belongs to a
+                    // different App row server-side. Almost always a "two App
+                    // rows for one product" misconfig; see DeviceClaimedElsewhere
+                    // KDoc for recovery options. Promoting to a typed case lets
+                    // integrators branch on it cleanly instead of pattern-matching
+                    // a string code on a generic ServerError.
+                    if (resp.code == 403 && detail?.code == "device_not_owned") {
+                        throw VouchflowError.DeviceClaimedElsewhere
+                    }
+
+                    // public_key_already_registered (409): post-server-v59 this
+                    // only fires when the device's public key is claimed under a
+                    // DIFFERENT customer or app — same-tenant re-token now
+                    // succeeds upstream. Typed so the integrator's recovery
+                    // strategy doesn't have to guess.
+                    if (resp.code == 409 && detail?.code == "public_key_already_registered") {
+                        throw VouchflowError.PublicKeyAlreadyRegistered
+                    }
+
                     throw VouchflowError.ServerError(
                         statusCode = resp.code,
                         code = detail?.code,
