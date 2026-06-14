@@ -26,6 +26,10 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
 
     private val baseUrl = config.environment.baseUrl
     private val apiKey = config.apiKey
+    private val hostname = config.environment.hostname
+    // Snapshot the pins so PinningFailure can echo them back — Config is immutable,
+    // so holding the strings is harmless and saves dragging the whole config around.
+    private val configuredPins = listOf(config.leafCertificatePin, config.intermediateCertificatePin)
 
     private val gson: Gson = GsonBuilder().create()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -99,7 +103,12 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
             if (msg.contains("Certificate pinning failure") ||
                 msg.contains("Certificate pinning failed") ||
                 msg.contains("placeholder pins")) {
-                throw VouchflowError.PinningFailure
+                throw VouchflowError.PinningFailure(
+                    hostname = hostname,
+                    configuredPins = configuredPins,
+                    servedSpkiSha256 = extractServedPinsFromOkHttpMessage(msg),
+                    pinningCause = e,
+                )
             }
             throw VouchflowError.NetworkUnavailable
         }
@@ -163,5 +172,26 @@ internal class VouchflowAPIClient(config: VouchflowConfig, context: Context) {
 
     companion object {
         private const val API_VERSION = "2026-04-01"
+
+        // OkHttp's SSLPeerUnverifiedException message lays out the chain like:
+        //   Certificate pinning failure!
+        //     Peer certificate chain:
+        //       sha256/<served_leaf>: CN=api.vouchflow.dev
+        //       sha256/<served_inter>: CN=YE1, O=Let's Encrypt, C=US
+        //     Pinned certificates for api.vouchflow.dev:
+        //       sha256/<configured_1>
+        //       sha256/<configured_2>
+        // We want the served set (the first block). Split on the "Pinned certificates"
+        // marker, scan the prefix half for sha256/ tokens, strip the prefix so the
+        // values returned to the caller are the same format they configured. Returns
+        // an empty list if the message isn't OkHttp's (e.g. our placeholder-pins path).
+        internal fun extractServedPinsFromOkHttpMessage(msg: String): List<String> {
+            val chainSection = msg.substringBefore("Pinned certificates for", missingDelimiterValue = "")
+            if (chainSection.isEmpty()) return emptyList()
+            return Regex("""sha256/([A-Za-z0-9+/=]+)""")
+                .findAll(chainSection)
+                .map { it.groupValues[1] }
+                .toList()
+        }
     }
 }

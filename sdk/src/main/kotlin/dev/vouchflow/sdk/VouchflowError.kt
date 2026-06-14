@@ -100,9 +100,34 @@ sealed class VouchflowError : Exception() {
 
     /**
      * The server's TLS certificate did not match the configured pins.
-     * This may indicate a MITM attack or a pin rotation that has not been deployed to the SDK.
+     *
+     * Either a MITM attack, a Let's Encrypt rotation that left the SDK's pinned values
+     * stale, or an integrator misconfiguration. Inspect the payload to tell which:
+     *
+     * - [configuredPins] is what you passed in [VouchflowConfig].
+     * - [servedSpkiSha256] is what the server's chain actually carries today.
+     *   Compare the two — if your configured leaf doesn't appear in the served list,
+     *   you're pinning to a stale value and need a refresh (see
+     *   [VouchflowConfig.leafCertificatePin] KDoc for the openssl one-liner).
+     *
+     * @param hostname Host that failed pinning (e.g. `api.vouchflow.dev`).
+     * @param configuredPins Raw base64 SPKI SHA-256 pins from [VouchflowConfig],
+     *   `sha256/` prefix stripped.
+     * @param servedSpkiSha256 Raw base64 SPKI SHA-256 of each certificate in the
+     *   chain the server presented. Parsed from OkHttp's failure message; empty if
+     *   the message couldn't be parsed (e.g. placeholder-pins failure path).
+     * @param pinningCause Underlying OkHttp/JSSE exception (named to avoid shadowing
+     *   [Throwable.cause] from the [Exception] base class).
      */
-    object PinningFailure : VouchflowError()
+    data class PinningFailure(
+        val hostname: String,
+        val configuredPins: List<String>,
+        val servedSpkiSha256: List<String>,
+        val pinningCause: Throwable?
+    ) : VouchflowError() {
+        override fun toString(): String =
+            "PinningFailure(host=$hostname, configured=$configuredPins, served=$servedSpkiSha256)"
+    }
 
     // ── Internal (not part of the public API surface) ─────────────────────────
 

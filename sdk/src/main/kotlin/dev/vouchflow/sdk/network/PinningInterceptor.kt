@@ -23,8 +23,11 @@ import java.io.IOException
  * - **Debug app**: pinning is skipped with a warning. Enables testing before TLS is finalised.
  * - **Release app**: all requests are blocked. Do not ship without real pins.
  *
- * Pin format expected in [VouchflowConfig]: base64-encoded SHA-256 of SubjectPublicKeyInfo.
- * OkHttp's [CertificatePinner] uses the same format with a `sha256/` prefix.
+ * Pin format expected in [VouchflowConfig]: raw base64-encoded SHA-256 of the
+ * SubjectPublicKeyInfo. **No `sha256/` prefix** — this interceptor prepends it before passing
+ * the value to OkHttp's [CertificatePinner]. Passing a value with the prefix already attached
+ * yields `sha256/sha256/<hash>` and fails pinning at runtime; [VouchflowConfig.init] rejects
+ * that case eagerly so the misconfiguration surfaces at `configure()` time instead.
  */
 internal class PinningInterceptor(
     private val config: VouchflowConfig,

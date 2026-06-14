@@ -3,9 +3,63 @@ package dev.vouchflow.sdk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class VouchflowConfigTest {
+
+    // ── sha256/ prefix guard ──────────────────────────────────────────────────
+    //
+    // The "you must register your app's identity" guidance previously read like
+    // a hint to prepend OkHttp's `sha256/` to the pin value. The SDK adds the
+    // prefix internally; passing it pre-prefixed silently double-prefixes and
+    // fails at runtime. The init-block require() turns that into a configure-time
+    // crash with a message naming the fix.
+
+    @Test
+    fun `init rejects sha256-prefixed leaf pin with a fix-naming message`() {
+        try {
+            VouchflowConfig(
+                apiKey = "vsk_live_test",
+                leafCertificatePin = "sha256/NQ7reZqY0tQjef9LBQwbs0gHjrdrroWrd+scM74zQrU="
+            )
+            fail("Expected IllegalArgumentException for sha256/-prefixed leaf pin")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(
+                "Error must say which field + what to do (got: ${e.message})",
+                (e.message ?: "").contains("leafCertificatePin") &&
+                    (e.message ?: "").contains("raw base64")
+            )
+        }
+    }
+
+    @Test
+    fun `init rejects sha256-prefixed intermediate pin with a fix-naming message`() {
+        try {
+            VouchflowConfig(
+                apiKey = "vsk_live_test",
+                intermediateCertificatePin = "sha256/brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4="
+            )
+            fail("Expected IllegalArgumentException for sha256/-prefixed intermediate pin")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(
+                "Error must say which field + what to do (got: ${e.message})",
+                (e.message ?: "").contains("intermediateCertificatePin") &&
+                    (e.message ?: "").contains("raw base64")
+            )
+        }
+    }
+
+    @Test
+    fun `init accepts raw base64 pins without prefix`() {
+        // Smoke check — the constructor would have thrown above if it rejected raw values.
+        VouchflowConfig(
+            apiKey = "vsk_live_test",
+            leafCertificatePin = "NQ7reZqY0tQjef9LBQwbs0gHjrdrroWrd+scM74zQrU=",
+            intermediateCertificatePin = "brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4="
+        )
+    }
+
 
     // ── hasTodoPlaceholderPins ────────────────────────────────────────────────
 
